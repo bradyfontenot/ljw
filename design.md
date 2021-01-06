@@ -26,34 +26,22 @@ A worker service for scheduling and running linux processes. The server provides
 - return response msg to client
 - handle multiple clients
 
-### **Worker**
-- handles calls from server to direct cmds and notify job supervisor of events so it can track events accordingly
-- methods will mirror client commands.
-    - called from server's handler functions.
-
-
-### **Job**
-- struct for storing individual job properties w/ relevant methods for executing commands.
-- Preliminary Struct Fields:
-  - id
-  - cmd
-  - status
-  - output
-
-### **Job Supervisor**
-- tracks and manages all jobs and related properties, providing info to server when requested.
-- handles job start, stop, status queries, scheduling, and fetching logs.
-- manage resources
+### **Jobs**
+- handles actual execution of client requested command
+    - start, stop, list, status, log
+- store job properties, for example:
+    - id, cmd, status, output
+- manage all job related data and activities. some examples:
+    - list of running jobs
+    - execute linux cmds and handle results from stdout/stderr
+    - provide info to server so it can send response to client
+- manage resources (Concerns to be aware of. won't implement per comments)
   - track # of jobs running concurrently. dont let exceed limit.
   - cancel job if taking too long
-  - limit length of command
-
-### * **still fleshing out exact boundaries of responsibility of worker and whether worker functionality should just be absorbed by server handlers. likely keep separate though.**
-
-<br><br>
+  - limit length of command 
 
 ### **Logs**
-- provide basic info about jobs. i.e. props from job struct. won't worry about formal log structure w/ timestamps, ips, status codes, etc for purposes of prototype. just prove capability.
+- provide basic info about jobs. i.e. props from job struct. just prove capability. not intended to be 100% complete.
 - stored in memory. will not write to file or store in DB for prototyping.
     - For production can worry about how many to keep and when to discard/no longer needed.
 - may do something like only keep the 50 most recent records to limit memory consumption for now. let me know thoughts.
@@ -83,8 +71,8 @@ A worker service for scheduling and running linux processes. The server provides
     Stop all jobs
 
 ### **[GET] Get logs**
-- **GET** `/jobs/logs` \
-    Retrieve list of all jobs recorded
+- **GET** `/jobs/{id}/log` \
+    Retrieve log for job matching `{id}` 
 
 <br><br>
 
