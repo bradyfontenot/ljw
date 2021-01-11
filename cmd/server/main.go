@@ -4,10 +4,12 @@ import (
 	"log"
 
 	"github.com/bradyfontenot/ljw/internal/server"
+	"github.com/bradyfontenot/ljw/internal/worker"
 )
 
 func main() {
 
-	srv := server.New()
+	wkr := worker.New()
+	srv := server.New(wkr)
 	log.Fatal(srv.ListenAndServeTLS("", ""))
 }
