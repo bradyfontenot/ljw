@@ -18,7 +18,7 @@ func main() {
 	for i := 0; i < 5; i++ {
 		c.StartJob()
 	}
-	c.GetJobs()
+	c.ListJobs()
 	c.JobStatus("3")
 	c.StopJob("3")
 	c.JobStatus("3")
