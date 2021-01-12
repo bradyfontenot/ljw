@@ -2,7 +2,7 @@
 /	Currently contains client constructor, auth function and
 /	request functions.  Similar to server, auth could be
 /	broken out into separate package if warranted by complexity.
-/	
+/
 /	cert/key/ca files stored in repo w/ paths hardcoded
 /	but should be accessed using environment variables
 /	or other method to keep hidden/secure.
@@ -46,25 +46,26 @@ type Client struct {
 // New creates and returns a new Client
 func New() *Client {
 
+	// load certs and config TLS for client
 	tlsConfig, err := setupTLS()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	tr := &http.Transport{
-		TLSClientConfig: tlsConfig,
+		TLSClientConfig:     tlsConfig,
+		TLSHandshakeTimeout: time.Duration(15 * time.Second),
 	}
 
-	c := &Client{
+	return &Client{
 		&http.Client{
 			Timeout:   time.Duration(30 * time.Second),
 			Transport: tr,
 		},
 	}
-
-	return c
 }
 
+// setupTLS sets up Authentication and builds tlsConfig for the client
 func setupTLS() (*tls.Config, error) {
 
 	// load certificate authority file
@@ -90,11 +91,12 @@ func setupTLS() (*tls.Config, error) {
 }
 
 // ListJobs requests a list of all jobs and outputs id and status
-func (cl *Client) ListJobs() {
+//
+// **** QUESTION:  Should this only be running jobs? *******
+func (cl *Client) ListRunningJobs() {
 	type response struct {
 		JobList []struct {
-			ID     int    `json:"id"`
-			Status string `json:"status"`
+			ID int `json:"id"`
 		} `json:"jobList"`
 	}
 
@@ -127,13 +129,14 @@ func (cl *Client) StartJob() {
 		ID int `json:"id"`
 	}
 
+	// temporary cmd until cli implemented.
 	msg := request{"test command"}
 	reqBody, err := json.Marshal(msg)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	// capture response
+	// send request & capture response
 	r, err := cl.Post(baseURI+"/api/jobs", "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
 		fmt.Println(err)
@@ -156,6 +159,7 @@ func (cl *Client) StartJob() {
 
 // JobStatus requests the status of job matching id
 func (cl *Client) JobStatus(id string) {
+	// send request & capture response
 	r, err := cl.Get(baseURI + "/api/jobs/" + id)
 	if err != nil {
 		fmt.Println(err)
@@ -183,17 +187,20 @@ func (cl *Client) JobStatus(id string) {
 
 // StopJob requests to delete job matching id
 func (cl *Client) StopJob(id string) {
+	// build DELETE request
 	req, err := http.NewRequest("DELETE", baseURI+"/api/jobs/"+id, nil)
 	if err != nil {
 		fmt.Println(err)
 	}
 
+	// capture response
 	r, err := cl.Do(req)
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	type response struct {
-		Msg string `json:"msg"`
+		Success bool `json:"success"`
 	}
 
 	defer r.Body.Close()
@@ -213,18 +220,21 @@ func (cl *Client) StopJob(id string) {
 
 // GetJobLog ....
 func (cl *Client) GetJobLog(id string) {
+
+	// send request & capture response
+	r, err := cl.Get(baseURI + "/api/jobs/" + id + "/log")
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	type response struct {
 		Cmd    string `json:"cmd"`
 		Status string `json:"status"`
 		Output string `json:"output"`
 	}
 
-	r, err := cl.Get(baseURI + "/api/jobs/" + id + "/log")
-	if err != nil {
-		fmt.Println(err)
-	}
-
 	defer r.Body.Close()
+	// TODO: handle error
 	body, err := ioutil.ReadAll(r.Body)
 
 	// extract response msg
