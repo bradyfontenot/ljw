@@ -1,3 +1,12 @@
+/*
+/	router.go defines all the routes and handlers
+/	I broke this out to keep server.go from getting cluttered.
+/
+/	For a larger project you'd probably want to break this out
+/	into its own package w/ separate files(or even separate packages)
+/	for each major endpoint and it's handlers depending on scale of project
+*/
+
 package server
 
 import (
@@ -8,33 +17,55 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-// Response is ...
+// Response is a catch all response struct
+//
+// I decided to use this instead of defining a struct for each response separately so that
+// I could pass a single type into the sendResp() helper that marshals the json and writes the request.
+// I wanted to avoid some repetitive boilerplate in the handlers.
 type Response struct {
-	Msg     string               `json:"msg,omitempty"`
-	Error   string               `json:"error,omitempty"`
-	ID      int                  `json:"id,omitempty"`
-	Status  string               `json:"status,omitempty"`
-	Cmd     string               `json:"cmd,omitempty"`
-	Output  string               `json:"output,omitempty"`
-	JobList []worker.RunningJobs `json:"jobList,omitempty"`
+	Success bool                 `json:"success,omitempty"` // successful operation
+	ID      int                  `json:"id,omitempty"`      // job ID
+	Status  string               `json:"status,omitempty"`  // job status
+	Cmd     string               `json:"cmd,omitempty"`     // job command
+	Output  string               `json:"output,omitempty"`  // job output
+	JobList []worker.RunningJobs `json:"jobList,omitempty"` // list of job ID's
 }
 
+// router creates handler and defines the routes.
 func (s *Server) router() *httprouter.Router {
 
 	r := httprouter.New()
 
-	r.GET("/api/jobs", s.listJobs)
-	r.GET("/api/jobs/:id", s.getJobStatus)
+	r.GET("/api/jobs", s.listRunningJobs)
 	r.POST("/api/jobs", s.startJob)
+	r.GET("/api/jobs/:id", s.getJobStatus)
 	r.DELETE("/api/jobs/:id", s.stopJob)
 	r.GET("/api/jobs/:id/log", s.getJobLog)
 
 	return r
 }
 
-// createJob calls the worker to create and start a new job to execute the linux command
-// in the client's request msg. If job is successfully added, the new job's id will be sent
-// to the client as a response along w/ a 201 statuscode.
+// listJobs retrieves list of ids for jobs currently in process
+func (s *Server) listRunningJobs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+
+	// get list of running jobs
+	jobList, err := s.worker.ListRunningJobs()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	// set header properties
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+
+	// build response msg & send
+	resp := Response{
+		JobList: jobList,
+	}
+	sendResp(w, resp)
+}
+
+// startJob starts a new job and returns new job id if successful
 func (s *Server) startJob(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	type request struct {
 		Cmd string
@@ -61,34 +92,14 @@ func (s *Server) startJob(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	sendResp(w, resp)
 }
 
-// getRunningJobs gets list of jobs currently in process
-//
-// returns array of objects with job id and cmd properties
-func (s *Server) listJobs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-
-	// get list of running jobs
-	jobList, err := s.worker.ListJobs()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	// set header properties
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	// build response msg & send
-	resp := Response{
-		JobList: jobList, // [{id, cmd}]
-	}
-	sendResp(w, resp)
-}
-
-// getJobStatus returns status of job matching id. If status is "complete", the output will
-// also be included in response
+// getJobStatus returns status of job matching id. Output will
+// also be included in response in case job is already complete
+// and client would like to see that output alongside status.
 func (s *Server) getJobStatus(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
 	status, err := s.worker.GetJobStatus(p.ByName("id"))
 	if err != nil {
+		// could also have case to return a 404 when id does not exist
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
@@ -104,11 +115,13 @@ func (s *Server) getJobStatus(w http.ResponseWriter, r *http.Request, p httprout
 	sendResp(w, resp)
 }
 
-// stopJob stops job matching id if currently running. Does nothing if job not running
+// stopJob stops job if it is currently running.
+// returns a boolean to confirm if job was canceled or not
 func (s *Server) stopJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 
-	msg, err := s.worker.StopJob(p.ByName("id"))
+	result, err := s.worker.StopJob(p.ByName("id"))
 	if err != nil {
+		// could also have case to return a 404 when id does not exist
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
@@ -117,8 +130,11 @@ func (s *Server) stopJob(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 	w.WriteHeader(http.StatusOK)
 
 	// build response msg & send
+	//
+	// probably should include reason if job isn't cancelled b/c
+	// it's already complete so client knows why job wasn't cancelled.
 	resp := Response{
-		Msg: msg,
+		Success: result,
 	}
 	sendResp(w, resp)
 }
@@ -127,6 +143,7 @@ func (s *Server) stopJob(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 func (s *Server) getJobLog(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	log, err := s.worker.GetJobLog(p.ByName("id"))
 	if err != nil {
+		// could also have case to return a 404 when id does not exist
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
@@ -149,6 +166,5 @@ func sendResp(w http.ResponseWriter, msg Response) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	// fmt.Printf("%s", resp)
 	w.Write(resp)
 }
