@@ -1,3 +1,22 @@
+/*
+/	Currently contains client constructor, auth function and
+/	request functions.  Similar to server, auth could be
+/	broken out into separate package if warranted by complexity.
+/	
+/	cert/key/ca files stored in repo w/ paths hardcoded
+/	but should be accessed using environment variables
+/	or other method to keep hidden/secure.
+
+/	TODO:
+/		* finish cli
+/		* write some helper funcs to format/print output.
+/
+/ 	request url's are concatenated/hardcoded in the request functions
+/ 	but ideally you'd use a helper func to build the url's instead
+/	so you can maintain a list of endpoints in one place and just feed them
+/	into the builder as needed.
+*/
+
 package client
 
 import (
