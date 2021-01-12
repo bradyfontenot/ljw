@@ -3,18 +3,23 @@
 /	request functions.  Similar to server, auth could be
 /	broken out into separate package if warranted by complexity.
 /
+/	Again, could also break out the requests if desired for a larger project
+/	with more than one endpoint and have a package for each.
+/	I've not done an api client in Go before but, in the past w/ elixir
+/	I've had a module for the client w/ generic methods for each request type
+/	and then separate modules for each endpoint w/ relevant methods.
+/
+/	So you could do something like set a baseURL w/ some middleware and then
+/ 	just pass an endpoint to the client's generic request method instead of
+/	passing the baseURL and hardcoding the endpoint everytime like below.
+/
 /	cert/key/ca files stored in repo w/ paths hardcoded
 /	but should be accessed using environment variables
 /	or other method to keep hidden/secure.
-
+/
 /	TODO:
 /		* finish cli
 /		* write some helper funcs to format/print output.
-/
-/ 	request url's are concatenated/hardcoded in the request functions
-/ 	but ideally you'd use a helper func to build the url's instead
-/	so you can maintain a list of endpoints in one place and just feed them
-/	into the builder as needed.
 */
 
 package client
@@ -92,7 +97,7 @@ func setupTLS() (*tls.Config, error) {
 
 // ListJobs requests a list of all jobs and outputs id and status
 //
-// **** QUESTION:  Should this only be running jobs? *******
+// **** QUESTION:  Should this only be running jobs or all jobs? *******
 func (cl *Client) ListRunningJobs() {
 	type response struct {
 		JobList []struct {
