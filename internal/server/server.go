@@ -4,13 +4,12 @@ package server
 import (
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/bradyfontenot/ljw/internal/worker"
 )
 
 const (
@@ -20,94 +19,59 @@ const (
 	caFile   = "ssl/ca.crt"
 )
 
-// Server is ...
+// Server
 type Server struct {
 	*http.Server
+	worker *worker.Worker
 }
 
-// Response is ...
-type Response struct {
-}
+// New creates a new server.
+func New(wkr *worker.Worker) *Server {
 
-// New initializes a new server.
-func New() *Server {
-
-	caCert, err := ioutil.ReadFile(caFile)
+	// load certs and config TLS for server
+	tlsConfig, err := setupTLS()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	var s Server
+	s = Server{
+		&http.Server{
+			Addr:    port,
+			Handler: s.router(),
+			// Generic timeout. Could use header timeout if you want to set specific read timeout for each handler
+			ReadTimeout:  time.Duration(30 * time.Second),
+			WriteTimeout: time.Duration(30 * time.Second),
+			TLSConfig:    tlsConfig,
+		},
+		wkr,
+	}
+
+	return &s
+}
+
+// buildTLSConfig setups Authentication and builds tlsConfig for the server.
+func setupTLS() (*tls.Config, error) {
+
+	// load certificate authority file
+	caCert, err := ioutil.ReadFile(caFile)
+	if err != nil {
+		return &tls.Config{}, err
+	}
+
+	// create pool for accepted certificate authorities and add ca.
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM(caCert)
 
 	// load certificate and private key files
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		log.Fatal(err)
+		return &tls.Config{}, err
 	}
-	s := new(Server)
 
-	tlsConfig := &tls.Config{
-		RootCAs:      caCertPool,
+	return &tls.Config{
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    caCertPool,
 		Certificates: []tls.Certificate{cert},
-	}
-
-	// build router and routes
-	r := httprouter.New()
-
-	r.GET("/", Index)
-	r.GET("/api/jobs", s.getJobs)
-	// r.GET("/api/jobs/:id")
-	// r.POST("/api/jobs")
-	// r.DELETE("/api/jobs/:id")
-	// r.GET("/api/jobs/:id/log")
-
-	// create https server with TLS configuration to manages certificates
-	s = &Server{
-		&http.Server{
-			Handler:   r,
-			Addr:      port,
-			TLSConfig: tlsConfig,
-		},
-	}
-	// srv.Handler = r
-	// srv.Addr = ":8080"
-	// srv.TLSConfig.Certificates = []tls.Certificate{cert}
-	return s
+	}, nil
 }
-
-// ***TEMP***
-//
-// Index handles requests to root directory
-func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	fmt.Printf("Hello from root")
-	msg := map[string]string{"msg": "Hello", "name": "Brady"}
-
-	res, err := json.Marshal(msg)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-
-	w.Write(res)
-
-}
-
-// get list handler /jobs
-func (s *Server) getJobs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	type response struct{}
-
-	respond()
-}
-
-// get 1 job handler /jobs/:id
-func (s *Server) getJobStatus(w http.ResponseWriter, r *http.Request, id httprouter.Params) {}
-
-// post 1 job handler /jobs
-func (s *Server) addJob(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {}
-
-// delete 1 job handler /jobs/:id
-func (s *Server) cancelJob(w http.ResponseWriter, r *http.Request, id httprouter.Params) {}
-
-// get 1 job log handler /jobs/:id/log
-func (s *Server) getJobLog(w http.ResponseWriter, r *http.Request, id httprouter.Params) {}
-
-func respond() {}
