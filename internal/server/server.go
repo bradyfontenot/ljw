@@ -1,4 +1,16 @@
-// Package server is an https server
+/*
+/	Server.go contains constructor and auth function.
+/	Auth could be in separate package if warranted by
+/	complexity.
+/
+/	Routes, which are part of server package are located
+/	in separate file along w/ the handlers(router.go)
+/
+/	cert/key/ca files stored in repo w/ paths hardcoded
+/	but should be accessed using environment variables
+/	or other method to keep hidden/secure.
+*/
+
 package server
 
 import (
@@ -19,13 +31,13 @@ const (
 	caFile   = "ssl/ca.crt"
 )
 
-// Server
+// Server implements http server and uses a worker to execute tasks.
 type Server struct {
 	*http.Server
 	worker *worker.Worker
 }
 
-// New creates a new server.
+// New creates and returns a new server.
 func New(wkr *worker.Worker) *Server {
 
 	// load certs and config TLS for server
@@ -39,7 +51,8 @@ func New(wkr *worker.Worker) *Server {
 		&http.Server{
 			Addr:    port,
 			Handler: s.router(),
-			// Generic timeout. Could use header timeout if you want to set specific read timeout for each handler
+			// Generic timeout. Could use header timeout if you want
+			// to set specific read timeout for each handler
 			ReadTimeout:  time.Duration(30 * time.Second),
 			WriteTimeout: time.Duration(30 * time.Second),
 			TLSConfig:    tlsConfig,
@@ -50,7 +63,7 @@ func New(wkr *worker.Worker) *Server {
 	return &s
 }
 
-// buildTLSConfig setups Authentication and builds tlsConfig for the server.
+// setupTLS sets up Authentication and builds tlsConfig for the server.
 func setupTLS() (*tls.Config, error) {
 
 	// load certificate authority file
