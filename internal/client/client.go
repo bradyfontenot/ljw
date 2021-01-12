@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 )
@@ -26,40 +27,55 @@ type Client struct {
 // New creates and returns a new Client
 func New() *Client {
 
-	caCert, err := ioutil.ReadFile(caFile)
+	tlsConfig, err := setupTLS()
 	if err != nil {
-		fmt.Println(err)
+		log.Fatal(err)
 	}
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
 
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		fmt.Println(err)
+	tr := &http.Transport{
+		TLSClientConfig: tlsConfig,
 	}
-	c := new(Client)
 
-	c = &Client{
+	c := &Client{
 		&http.Client{
-			Timeout: time.Duration(30 * time.Second),
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					RootCAs:      caCertPool,
-					Certificates: []tls.Certificate{cert},
-				},
-			},
+			Timeout:   time.Duration(30 * time.Second),
+			Transport: tr,
 		},
 	}
 
 	return c
 }
 
-// GetJobs requests a list of all running jobs and outputs results to terminal
-func (cl *Client) GetJobs() {
+func setupTLS() (*tls.Config, error) {
+
+	// load certificate authority file
+	caCert, err := ioutil.ReadFile(caFile)
+	if err != nil {
+		return nil, err
+	}
+
+	// create pool for accepted certificate authorities and add ca.
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	// load certificate and private key files
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tls.Config{
+		RootCAs:      caCertPool,
+		Certificates: []tls.Certificate{cert},
+	}, nil
+}
+
+// ListJobs requests a list of all jobs and outputs id and status
+func (cl *Client) ListJobs() {
 	type response struct {
 		JobList []struct {
-			ID  int    `json:"id"`
-			Cmd string `json:"cmd"`
+			ID     int    `json:"id"`
+			Status string `json:"status"`
 		} `json:"jobList"`
 	}
 
@@ -184,7 +200,7 @@ func (cl *Client) GetJobLog(id string) {
 		Output string `json:"output"`
 	}
 
-	r, err := cl.Get(baseURI + "/api/jobs/" + id)
+	r, err := cl.Get(baseURI + "/api/jobs/" + id + "/log")
 	if err != nil {
 		fmt.Println(err)
 	}
