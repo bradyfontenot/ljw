@@ -1,8 +1,8 @@
 package worker
 
 import (
-	"bytes"
 	"fmt"
+	"log"
 	"os/exec"
 )
 
@@ -38,16 +38,14 @@ func (j *Job) start() error {
 	// set job status
 	j.status = running
 
-	// out, err := exec.Command("grep", "main").Output()
-	c := exec.Command("grep", "brady", "go.mod") //, "brady go.mod")
-	var out bytes.Buffer
-	c.Stdout = &out
-	err := c.Run()
+	stdoutStderr, err := exec.Command("ls").CombinedOutput()
 	if err != nil {
-		j.status = failed
-		fmt.Println(err)
+		log.Printf("%v\n", stdoutStderr)
 	}
-	fmt.Printf("Results: %q\n", out.String())
+	fmt.Printf("%s", stdoutStderr)
+
+	j.output = string(stdoutStderr)
+	j.status = completed
 
 	return nil
 }
