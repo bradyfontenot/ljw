@@ -29,6 +29,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -81,7 +82,7 @@ func setupTLS() (*tls.Config, error) {
 	// create pool for accepted certificate authorities and add ca.
 	caCertPool := x509.NewCertPool()
 	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-		return nil, err
+		return nil, errors.New("failed to append certs from pem")
 	}
 
 	// load certificate and private key files
@@ -96,10 +97,8 @@ func setupTLS() (*tls.Config, error) {
 	}, nil
 }
 
-// ListJobs requests a list of all jobs and outputs id and status
-//
-// **** QUESTION:  Should this only be running jobs or all jobs? *******
-func (cl *Client) ListRunningJobs() {
+// ListRunningJobs requests a list of all jobs and outputs id and status
+func (cl *Client) ListRunningJobs() error {
 	type response struct {
 		JobList []struct {
 			ID int `json:"id"`
@@ -108,25 +107,29 @@ func (cl *Client) ListRunningJobs() {
 
 	r, err := cl.Get(baseURI + "/api/jobs")
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
-
+	if err != nil {
+		return err
+	}
 	// extract response msg
 	var resp response
 	err = json.Unmarshal([]byte(body), &resp)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	// TODO: Format Output
 	fmt.Printf("Running Jobs: %+v \n", resp)
+
+	return nil
 }
 
 // StartJob posts a request to start a new job
-func (cl *Client) StartJob() {
+func (cl *Client) StartJob() error {
 	type request struct {
 		Cmd string `json:"cmd"`
 	}
@@ -139,36 +142,40 @@ func (cl *Client) StartJob() {
 	msg := request{"test command"}
 	reqBody, err := json.Marshal(msg)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	// send request & capture response
 	r, err := cl.Post(baseURI+"/api/jobs", "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
-		fmt.Println(err)
+		return err
+
 	}
 
 	defer r.Body.Close()
-	// TODO: handle error
 	body, err := ioutil.ReadAll(r.Body)
-
+	if err != nil {
+		return err
+	}
 	// extract response msg
 	var resp response
 	err = json.Unmarshal([]byte(body), &resp)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	// TODO: Format Output
 	fmt.Printf("Job Added: %+v \n", resp)
+
+	return nil
 }
 
 // JobStatus requests the status of job matching id
-func (cl *Client) JobStatus(id string) {
+func (cl *Client) JobStatus(id string) error {
 	// send request & capture response
 	r, err := cl.Get(baseURI + "/api/jobs/" + id)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	type response struct {
@@ -177,32 +184,35 @@ func (cl *Client) JobStatus(id string) {
 	}
 
 	defer r.Body.Close()
-	// TODO: handle error
 	body, err := ioutil.ReadAll(r.Body)
-
+	if err != nil {
+		return err
+	}
 	// extract response msg
 	var resp response
 	err = json.Unmarshal([]byte(body), &resp)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	// TODO: Format Output
 	fmt.Printf("Job Status: %+v \n", resp)
+
+	return nil
 }
 
 // StopJob requests to delete job matching id
-func (cl *Client) StopJob(id string) {
+func (cl *Client) StopJob(id string) error {
 	// build DELETE request
 	req, err := http.NewRequest("DELETE", baseURI+"/api/jobs/"+id, nil)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	// capture response
 	r, err := cl.Do(req)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	type response struct {
@@ -210,27 +220,30 @@ func (cl *Client) StopJob(id string) {
 	}
 
 	defer r.Body.Close()
-	// TODO: handle error
 	body, err := ioutil.ReadAll(r.Body)
-
+	if err != nil {
+		return err
+	}
 	// extract response msg
 	var resp response
 	err = json.Unmarshal([]byte(body), &resp)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	// TODO: Format Output
 	fmt.Printf("Job Canceled?: %+v \n", resp)
+
+	return nil
 }
 
 // GetJobLog ....
-func (cl *Client) GetJobLog(id string) {
+func (cl *Client) GetJobLog(id string) error {
 
 	// send request & capture response
 	r, err := cl.Get(baseURI + "/api/jobs/" + id + "/log")
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	type response struct {
@@ -240,16 +253,19 @@ func (cl *Client) GetJobLog(id string) {
 	}
 
 	defer r.Body.Close()
-	// TODO: handle error
 	body, err := ioutil.ReadAll(r.Body)
-
+	if err != nil {
+		return err
+	}
 	// extract response msg
 	var resp response
 	err = json.Unmarshal([]byte(body), &resp)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	// TODO: Format Output
 	fmt.Printf("Job Log: %+v \n", resp)
+
+	return nil
 }
