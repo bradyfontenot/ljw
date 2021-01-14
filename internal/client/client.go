@@ -31,7 +31,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 )
@@ -49,12 +48,12 @@ type Client struct {
 }
 
 // New creates and returns a new Client
-func New() *Client {
+func New() (*Client, error) {
 
 	// load certs and config TLS for client
 	tlsConfig, err := setupTLS()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	tr := &http.Transport{
@@ -67,7 +66,7 @@ func New() *Client {
 			Timeout:   time.Duration(30 * time.Second),
 			Transport: tr,
 		},
-	}
+	}, nil
 }
 
 // setupTLS sets up Authentication and builds tlsConfig for the client
@@ -81,7 +80,9 @@ func setupTLS() (*tls.Config, error) {
 
 	// create pool for accepted certificate authorities and add ca.
 	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
+	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
+		return nil, err
+	}
 
 	// load certificate and private key files
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
