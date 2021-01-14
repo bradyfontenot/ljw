@@ -13,7 +13,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/bradyfontenot/ljw/internal/worker"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -23,12 +22,14 @@ import (
 // I could pass a single type into the sendResp() helper that marshals the json and writes the request.
 // I wanted to avoid some repetitive boilerplate in the handlers.
 type Response struct {
-	Success bool                 `json:"success,omitempty"` // successful operation
-	ID      int                  `json:"id,omitempty"`      // job ID
-	Status  string               `json:"status,omitempty"`  // job status
-	Cmd     string               `json:"cmd,omitempty"`     // job command
-	Output  string               `json:"output,omitempty"`  // job output
-	JobList []worker.RunningJobs `json:"jobList,omitempty"` // list of job ID's
+	Msg       string `json:"msg,omitempty"`       // message
+	Success   bool   `json:"success,omitempty"`   // successful operation
+	ID        int    `json:"id,omitempty"`        // job ID
+	Status    string `json:"status,omitempty"`    // job status
+	Cmd       string `json:"cmd,omitempty"`       // job command
+	Output    string `json:"output,omitempty"`    // job output
+	JobIDList []int  `json:"jobIDList,omitempty"` // list of job ID's
+	// JobList []worker.RunningJobs `json:"jobList,omitempty"` // list of job ID's
 }
 
 // router creates handler and defines the routes.
@@ -40,7 +41,7 @@ func (s *Server) router() *httprouter.Router {
 	r.POST("/api/jobs", s.startJob)
 	r.GET("/api/jobs/:id", s.getJobStatus)
 	r.DELETE("/api/jobs/:id", s.stopJob)
-	r.GET("/api/jobs/:id/log", s.getJobLog)
+	r.GET("/api/jobs/:id/log", s.getJob)
 
 	return r
 }
@@ -49,11 +50,7 @@ func (s *Server) router() *httprouter.Router {
 func (s *Server) listRunningJobs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	// get list of running jobs
-	jobList, err := s.worker.ListRunningJobs()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	jobIDList := s.worker.ListRunningJobs()
 
 	// set header properties
 	w.Header().Set("Content-Type", "application/json")
@@ -61,7 +58,7 @@ func (s *Server) listRunningJobs(w http.ResponseWriter, r *http.Request, _ httpr
 
 	// build response msg & send
 	resp := Response{
-		JobList: jobList,
+		JobIDList: jobIDList,
 	}
 	sendResp(w, resp)
 }
@@ -145,8 +142,8 @@ func (s *Server) stopJob(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 }
 
 // getJobLog returns log for job matching id
-func (s *Server) getJobLog(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	log, err := s.worker.GetJobLog(p.ByName("id"))
+func (s *Server) getJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	log, err := s.worker.GetJob(p.ByName("id"))
 	if err != nil {
 		// could also have case to return a 404 when id does not exist
 		http.Error(w, err.Error(), http.StatusInternalServerError)
