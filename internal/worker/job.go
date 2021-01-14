@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"sync"
 )
 
 const (
+	queued   = "QUEUED"
 	running  = "RUNNING"
 	finished = "FINISHED"
 	canceled = "CANCELED"
@@ -20,6 +22,7 @@ type Job struct {
 	status string
 	output string
 	pid    int
+	mu     sync.Mutex
 }
 
 // New creates a new Job
@@ -27,6 +30,7 @@ func newJob(cmd string) *Job {
 	return &Job{
 		cmd:    cmd,
 		status: running,
+		mu:     sync.Mutex{},
 	}
 }
 
@@ -35,7 +39,6 @@ func newJob(cmd string) *Job {
 //	* Run in go routine ya?
 
 func (j *Job) start(id int) error {
-
 	// set job status
 	j.status = running
 
@@ -50,11 +53,14 @@ func (j *Job) start(id int) error {
 
 	// run command
 	if err := cmd.Start(); err != nil {
+		// mutex here probably.
 		j.status = failed
 		j.output = err.Error()
 
 		return fmt.Errorf("error starting command: %w", err)
 	}
+
+	// mutex here
 	// store the Pid so stop() can be called later if needed.
 	j.pid = cmd.Process.Pid
 
@@ -64,6 +70,7 @@ func (j *Job) start(id int) error {
 
 	cmd.Wait()
 
+	// mutex here
 	// store result from process
 	j.output = string(stdoutStderr)
 	j.status = finished
@@ -74,17 +81,16 @@ func (j *Job) start(id int) error {
 }
 
 func (j *Job) stop() (bool, error) {
-
 	if j.status != running {
 		return false, nil
 	}
 
 	proc, err := os.FindProcess(j.pid)
 	if err != nil {
-		return false, fmt.Errorf("could not find process. error: %w", err)
+		return false, fmt.Errorf("could not find process. error: %v", err)
 	}
 	if err = proc.Kill(); err != nil {
-		return false, fmt.Errorf("could not kill process. error: %w", err)
+		return false, fmt.Errorf("could not kill process. error: %v", err)
 	}
 
 	j.status = canceled
