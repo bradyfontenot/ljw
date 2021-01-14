@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/bradyfontenot/ljw/internal/client"
 )
@@ -21,6 +22,7 @@ func main() {
 	// will be replaced with a cli
 	for i := 0; i < 5; i++ {
 		c.StartJob()
+		time.Sleep(time.Duration(1) * time.Second)
 	}
 	c.ListRunningJobs()
 	c.JobStatus("3")
