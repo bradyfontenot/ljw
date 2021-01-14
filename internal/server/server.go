@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	port     = ":8080"
+	port     = "localhost:8080"
 	certFile = "ssl/server.crt"
 	keyFile  = "ssl/server.key"
 	caFile   = "ssl/ca.crt"

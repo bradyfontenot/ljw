@@ -11,7 +11,7 @@ func main() {
 
 	c, err := client.New()
 	if err != nil {
-		fmt.Printf("Problem Authenticating.\n Error: %w\n Shutting down...", err)
+		fmt.Printf("Problem Authenticating.\nError: %s\nShutting down...\n", err)
 		os.Exit(1)
 	}
 
