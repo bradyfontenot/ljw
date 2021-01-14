@@ -52,6 +52,7 @@ func (s *Server) listRunningJobs(w http.ResponseWriter, r *http.Request, _ httpr
 	jobList, err := s.worker.ListRunningJobs()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	// set header properties
@@ -76,12 +77,14 @@ func (s *Server) startJob(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	// pass cmd to worker to build new job and receive id of new job
 	jobID, err := s.worker.StartJob(req.Cmd)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	// set header properties
 	w.Header().Set("Content-Type", "application/json")
@@ -101,6 +104,7 @@ func (s *Server) getJobStatus(w http.ResponseWriter, r *http.Request, p httprout
 	if err != nil {
 		// could also have case to return a 404 when id does not exist
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	// set header properties
@@ -123,6 +127,7 @@ func (s *Server) stopJob(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 	if err != nil {
 		// could also have case to return a 404 when id does not exist
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	// set header properties
@@ -145,6 +150,7 @@ func (s *Server) getJobLog(w http.ResponseWriter, r *http.Request, p httprouter.
 	if err != nil {
 		// could also have case to return a 404 when id does not exist
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	// set header properties
@@ -165,6 +171,7 @@ func sendResp(w http.ResponseWriter, msg Response) {
 	resp, err := json.Marshal(msg)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	w.Write(resp)
 }
