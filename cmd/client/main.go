@@ -2,13 +2,19 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/bradyfontenot/ljw/internal/client"
 )
 
 func main() {
 
-	c := client.New()
+	c, err := client.New()
+	if err != nil {
+		fmt.Printf("Problem Authenticating.\n Error: %w\n Shutting down...", err)
+		os.Exit(1)
+	}
+
 	fmt.Print("Client started\n")
 
 	// Temporary Calls to check request/response data
