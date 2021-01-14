@@ -101,9 +101,7 @@ func setupTLS() (*tls.Config, error) {
 // **** QUESTION:  Should this only be running jobs or all jobs? *******
 func (cl *Client) ListRunningJobs() {
 	type response struct {
-		JobList []struct {
-			ID int `json:"id"`
-		} `json:"jobList"`
+		JobIDList []int `json:"jobIDList"`
 	}
 
 	r, err := cl.Get(baseURI + "/api/jobs")
@@ -251,5 +249,5 @@ func (cl *Client) GetJobLog(id string) {
 	}
 
 	// TODO: Format Output
-	fmt.Printf("Job Log: %+v \n", resp)
+	fmt.Printf("Job Log:\n ID: %v\n Command: %v \n Status: %v \n Output: %v \n", id, resp.Cmd, resp.Status, resp.Output)
 }
