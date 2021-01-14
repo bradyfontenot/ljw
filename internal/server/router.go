@@ -76,7 +76,7 @@ func (s *Server) startJob(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	var req request
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
