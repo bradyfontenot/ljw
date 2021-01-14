@@ -10,7 +10,7 @@ var idCounter int = 0
 
 // Worker is a store and task manager for all Jobs
 type Worker struct {
-	Jobs   map[int]*Job // key serves as job id
+	jobs   map[int]*Job // key serves as job id
 	currID int
 	sync.Mutex
 }
@@ -25,30 +25,27 @@ func New() *Worker {
 }
 
 func (wkr *Worker) StartJob(cmd string) (int, error) {
-	defer wkr.Unlock()
-	wkr.Lock()
 	wkr.currID++
-
+	id := wkr.currID
 	// create new job instance
-	wkr.Jobs[wkr.currID] = newJob(cmd)
+	wkr.jobs[id] = newJob(cmd)
 
 	// start job
 	go func() {
-		if err := wkr.Jobs[wkr.currID].start(wkr.currID); err != nil {
+		if err := wkr.jobs[wkr.currID].start(wkr.currID); err != nil {
 			// print error msg srvr side and pass through
 			// to handler
 			// fmt.Println(err)
 			// return -1, err
 		}
 	}()
-	return wkr.currID, nil
+	return id, nil
 }
 
 // ListRunningJobs returns a list of running jobs
 func (wkr *Worker) ListRunningJobs() []int {
-
 	var list []int
-	for id, job := range wkr.Jobs {
+	for id, job := range wkr.jobs {
 		if running == job.status {
 			list = append(list, id)
 		}
@@ -61,7 +58,7 @@ func (wkr *Worker) StopJob(id string) (bool, error) {
 	idInt, _ := strconv.Atoi(id)
 
 	// validate id
-	job, ok := wkr.Jobs[idInt]
+	job, ok := wkr.jobs[idInt]
 	if !ok {
 		return false, errors.New("invalid id")
 	}
@@ -78,7 +75,7 @@ func (wkr *Worker) GetJobStatus(id string) (map[string]string, error) {
 	idInt, _ := strconv.Atoi(id)
 
 	// validate id
-	job, ok := wkr.Jobs[idInt]
+	job, ok := wkr.jobs[idInt]
 	if !ok {
 		return nil, errors.New("invalid id")
 	}
@@ -93,7 +90,7 @@ func (wkr *Worker) GetJob(id string) (map[string]string, error) {
 	idInt, _ := strconv.Atoi(id)
 
 	// validate id
-	job, ok := wkr.Jobs[idInt]
+	job, ok := wkr.jobs[idInt]
 	if !ok {
 		return nil, errors.New("invalid id")
 	}
