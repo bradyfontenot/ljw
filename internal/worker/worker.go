@@ -3,14 +3,15 @@ package worker
 import (
 	"errors"
 	"strconv"
+	"strings"
 	"sync"
 )
 
 var idCounter int = 0
 
-// Worker is a store and task manager for all Jobs
+// Worker is a store and task manager for all jobs
 type Worker struct {
-	jobs   map[int]*Job // key serves as job id
+	jobs   map[int]*job // key serves as job id
 	currID int
 	sync.Mutex
 }
@@ -18,13 +19,13 @@ type Worker struct {
 // New creates a new Worker
 func New() *Worker {
 	return &Worker{
-		make(map[int]*Job),
+		make(map[int]*job),
 		0,
 		sync.Mutex{},
 	}
 }
 
-func (wkr *Worker) StartJob(cmd string) (int, error) {
+func (wkr *Worker) StartJob(cmd []string) (int, error) {
 	wkr.currID++
 	id := wkr.currID
 	// create new job instance
@@ -96,7 +97,7 @@ func (wkr *Worker) GetJob(id string) (map[string]string, error) {
 	}
 
 	return map[string]string{
-		"cmd":    job.cmd,
+		"cmd":    strings.Join(job.cmd, " "),
 		"status": job.status,
 		"output": job.output,
 	}, nil
