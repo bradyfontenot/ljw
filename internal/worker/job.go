@@ -18,7 +18,7 @@ const (
 
 // Job is one linux job
 type Job struct {
-	cmd    string
+	cmd    []string
 	status string
 	output string
 	pid    int
@@ -26,7 +26,7 @@ type Job struct {
 }
 
 // New creates a new Job
-func newJob(cmd string) *Job {
+func newJob(cmd []string) *Job {
 	return &Job{
 		cmd:    cmd,
 		status: running,
@@ -39,12 +39,9 @@ func newJob(cmd string) *Job {
 //	* Run in go routine ya?
 
 func (j *Job) start(id int) error {
-	// set job status
-	j.status = running
 
 	// init new Command
-	cmd := exec.Command("sleep", "5")
-
+	cmd := exec.Command(j.cmd[0], j.cmd[1:]...)
 	// set stdout and stderr to write to same buffer
 	// mimics CombinedOutput() from os/exec library
 	var buf bytes.Buffer
@@ -59,24 +56,24 @@ func (j *Job) start(id int) error {
 
 		return fmt.Errorf("error starting command: %w", err)
 	}
+	// set job status
+	j.status = running
 
 	// mutex here
 	// store the Pid so stop() can be called later if needed.
 	j.pid = cmd.Process.Pid
 
-	// get stdout/stderr from buffer
-	var stdoutStderr []byte
-	buf.Write(stdoutStderr)
-
+	// wait for process to end before access buffer below
 	cmd.Wait()
 
 	// mutex here
 	// store result from process
+	stdoutStderr := buf.Bytes()
 	j.output = string(stdoutStderr)
 	j.status = finished
 
-	fmt.Printf("%d Finished Job # %d: %s\n", j.pid, id, stdoutStderr)
-
+	fmt.Printf("PID: %d Finished Job # %d \n", j.pid, id)
+	fmt.Printf("Output: %s\n", j.output)
 	return nil
 }
 
