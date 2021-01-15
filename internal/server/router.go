@@ -66,7 +66,7 @@ func (s *Server) listRunningJobs(w http.ResponseWriter, r *http.Request, _ httpr
 // startJob starts a new job and returns new job id if successful
 func (s *Server) startJob(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	type request struct {
-		Cmd string
+		Cmd []string
 	}
 
 	// decode request msg
@@ -76,7 +76,6 @@ func (s *Server) startJob(w http.ResponseWriter, r *http.Request, _ httprouter.P
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 	// pass cmd to worker to build new job and receive id of new job
 	jobID, err := s.worker.StartJob(req.Cmd)
 	if err != nil {
@@ -96,7 +95,6 @@ func (s *Server) startJob(w http.ResponseWriter, r *http.Request, _ httprouter.P
 // also be included in response in case job is already complete
 // and client would like to see that output alongside status.
 func (s *Server) getJobStatus(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-
 	status, err := s.worker.GetJobStatus(p.ByName("id"))
 	if err != nil {
 		// could also have case to return a 404 when id does not exist
@@ -119,7 +117,6 @@ func (s *Server) getJobStatus(w http.ResponseWriter, r *http.Request, p httprout
 // stopJob stops job if it is currently running.
 // returns a boolean to confirm if job was canceled or not
 func (s *Server) stopJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-
 	result, err := s.worker.StopJob(p.ByName("id"))
 	if err != nil {
 		// could also have case to return a 404 when id does not exist
