@@ -101,7 +101,7 @@ func setupTLS() (*tls.Config, error) {
 // **** QUESTION:  Should this only be running jobs or all jobs? *******
 func (cl *Client) ListRunningJobs() error {
 	type response struct {
-		JobIDList []int `json:"jobIDList"`
+		JobIDList []string `json:"jobIDList"`
 	}
 
 	r, err := cl.Get(baseURI + "/api/jobs")
@@ -135,7 +135,10 @@ func (cl *Client) StartJob(cmd []string) error {
 	}
 
 	type response struct {
-		ID int `json:"id"`
+		ID     string `json:"id"`
+		Cmd    string `json:"cmd"`
+		Status string `json:"status"`
+		Output string `json:"output"`
 	}
 
 	msg := request{cmd}
@@ -162,7 +165,13 @@ func (cl *Client) StartJob(cmd []string) error {
 	}
 
 	// TODO: Format Output
-	fmt.Println("[SUCCESS] Job ID:", resp.ID)
+	fmt.Printf("[JOB ADDED]\n -ID: %s\n -Status: %s\n", resp.ID, resp.Status)
+	// fmt.Printf("[STATUS] %s\n", resp.Status)
+	if resp.Status == "FINISHED" || resp.Status == "FAILED" {
+		fmt.Printf(" -Output: %s\n", resp.Output)
+
+	}
+	// fmt.Printf("[JOB ADDED]\n -ID: %s\n -Command: %s\n -Status: %s\n -Output:\n%s\n", id, resp.Cmd, resp.Status, resp.Output)
 	return nil
 }
 
@@ -176,12 +185,13 @@ func (cl *Client) JobStatus(id string) error {
 
 	type response struct {
 		Status string `json:"status"`
-		Output string `json:"output,omitempty"`
 	}
 
 	defer r.Body.Close()
-	// TODO: handle error
 	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
 
 	// extract response msg
 	var resp response
@@ -191,7 +201,7 @@ func (cl *Client) JobStatus(id string) error {
 	}
 
 	// TODO: Format Output
-	fmt.Printf("[JOB STATUS] Status: %s \n", resp.Status)
+	fmt.Printf("[JOB STATUS] => %s \n", resp.Status)
 	return nil
 }
 
