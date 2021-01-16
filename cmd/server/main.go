@@ -9,7 +9,6 @@ import (
 
 func main() {
 
-	wkr := worker.New()
-	srv := server.New(wkr)
+	srv := server.New(worker.New())
 	log.Fatal(srv.ListenAndServeTLS("", ""))
 }
