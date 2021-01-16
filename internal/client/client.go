@@ -16,10 +16,6 @@
 /	cert/key/ca files stored in repo w/ paths hardcoded
 /	but should be accessed using environment variables
 /	or other method to keep hidden/secure.
-/
-/	TODO:
-/		* finish cli
-/		* write some helper funcs to format/print output.
 */
 
 package client
@@ -29,9 +25,12 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -96,9 +95,7 @@ func setupTLS() (*tls.Config, error) {
 	}, nil
 }
 
-// ListJobs requests a list of all jobs and outputs id and status
-//
-// **** QUESTION:  Should this only be running jobs or all jobs? *******
+// ListRunningJobs requests a list of all jobs and outputs id and status
 func (cl *Client) ListRunningJobs() error {
 	type response struct {
 		JobIDList []string `json:"jobIDList"`
@@ -111,6 +108,9 @@ func (cl *Client) ListRunningJobs() error {
 
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
 
 	// extract response msg
 	var resp response
@@ -119,7 +119,10 @@ func (cl *Client) ListRunningJobs() error {
 		return err
 	}
 
-	// TODO: Format Output
+	// TODO:
+	//	Printing output here for simplicity.
+	//	In mvp/prod we should return (response, err) for flexibility
+	//	and handle output in the frontend that is using client.
 	fmt.Println("[ALL JOBS]")
 	for _, v := range resp.JobIDList {
 		fmt.Println(" -ID:", v)
@@ -154,8 +157,15 @@ func (cl *Client) StartJob(cmd []string) error {
 	}
 
 	defer r.Body.Close()
-	// TODO: handle error
 	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+
+	// check if request was successful
+	if r.StatusCode != http.StatusCreated {
+		return errors.New(string(body))
+	}
 
 	// extract response msg
 	var resp response
@@ -164,34 +174,36 @@ func (cl *Client) StartJob(cmd []string) error {
 		return err
 	}
 
-	// TODO: Format Output
+	// TODO: See previous note about output
 	fmt.Printf("[JOB ADDED]\n -ID: %s\n -Status: %s\n", resp.ID, resp.Status)
-	// fmt.Printf("[STATUS] %s\n", resp.Status)
 	if resp.Status == "FINISHED" || resp.Status == "FAILED" {
 		fmt.Printf(" -Output:\n%s", resp.Output)
 		fmt.Print("[END]\n\n")
-
 	}
-	// fmt.Printf("[JOB ADDED]\n -ID: %s\n -Command: %s\n -Status: %s\n -Output:\n%s\n", id, resp.Cmd, resp.Status, resp.Output)
 	return nil
 }
 
 // JobStatus requests the status of job matching id
 func (cl *Client) JobStatus(id string) error {
+	type response struct {
+		Status string `json:"status"`
+	}
+
 	// send request & capture response
 	r, err := cl.Get(baseURI + "/api/jobs/" + id)
 	if err != nil {
 		return err
 	}
 
-	type response struct {
-		Status string `json:"status"`
-	}
-
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return err
+	}
+
+	// check if request was successful
+	if r.StatusCode != http.StatusOK {
+		return errors.New(string(body))
 	}
 
 	// extract response msg
@@ -201,64 +213,77 @@ func (cl *Client) JobStatus(id string) error {
 		return err
 	}
 
-	// TODO: Format Output
+	// TODO: See previous note about output
 	fmt.Printf("[JOB STATUS] => %s \n", resp.Status)
+
 	return nil
 }
 
 // StopJob requests to delete job matching id
 func (cl *Client) StopJob(id string) error {
+	type response struct {
+		Success bool `json:"success"`
+	}
+
 	// build DELETE request
 	req, err := http.NewRequest("DELETE", baseURI+"/api/jobs/"+id, nil)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
 	// capture response
 	r, err := cl.Do(req)
 	if err != nil {
-		fmt.Println(err)
-	}
-
-	type response struct {
-		Success bool `json:"success"`
+		return err
 	}
 
 	defer r.Body.Close()
-	// TODO: handle error
 	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+
+	// check if request was successful
+	if r.StatusCode != http.StatusOK {
+		return errors.New(string(body))
+	}
 
 	// extract response msg
 	var resp response
 	err = json.Unmarshal([]byte(body), &resp)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 
-	// TODO: Format Output
-	fmt.Printf("Job Canceled?: %+v \n", resp)
+	// TODO: See previous note about output
+	fmt.Printf("[JOB STOPPED] => %s \n", strings.ToUpper(strconv.FormatBool(resp.Success)))
+
 	return nil
 }
 
 // GetJobLog ....
 func (cl *Client) GetJobLog(id string) error {
-
-	// send request & capture response
-	r, err := cl.Get(baseURI + "/api/jobs/" + id + "/log")
-	if err != nil {
-		fmt.Println(err)
-	}
-
 	type response struct {
 		Cmd    string `json:"cmd"`
 		Status string `json:"status"`
 		Output string `json:"output"`
 	}
 
+	// send request & capture response
+	r, err := cl.Get(baseURI + "/api/jobs/" + id + "/log")
+	if err != nil {
+		return err
+	}
+
 	defer r.Body.Close()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return err
+	}
+
+	// check if request was successful
+	if r.StatusCode != http.StatusOK {
+		return errors.New(string(body))
 	}
 
 	// extract response msg
@@ -268,8 +293,9 @@ func (cl *Client) GetJobLog(id string) error {
 		return err
 	}
 
-	// TODO: Format Output
+	// TODO: See previous note about output
 	fmt.Printf("[JOB LOG]\n -ID: %s\n -Command: %s\n -Status: %s\n -Output:\n%s\n", id, resp.Cmd, resp.Status, resp.Output)
 	fmt.Print("[END]\n\n")
+
 	return nil
 }
