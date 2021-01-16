@@ -28,7 +28,7 @@ func main() {
 
 	switch appCommand {
 	case "list":
-		list(c)
+		list(c, args[0:])
 	case "status":
 		status(c, args[0:])
 	case "start":
@@ -42,16 +42,17 @@ func main() {
 	}
 }
 
-// printUsage prints usage instructions
-func printUsage() {
-	fmt.Println("[USAGE]")
-	fmt.Printf(" list\n start \t<linux cmd>\n status\t<job id>\n stop \t<job id>\n log \t<job id>\n\n")
-}
+func list(c *client.Client, args []string) {
+	// validate args exist
+	if len(args) > 0 {
+		fmt.Println("\nToo many args. list take no arguments.\n")
+		printUsage()
+		return
+	}
 
-func list(c *client.Client) {
 	err := c.ListRunningJobs()
 	if err != nil {
-		fmt.Printf("Error: %v \n", err)
+		printError(err)
 		return
 	}
 }
@@ -65,7 +66,7 @@ func status(c *client.Client, args []string) {
 
 	err = c.JobStatus(id)
 	if err != nil {
-		fmt.Printf("Error: %v \n", err)
+		printError(err)
 		return
 	}
 }
@@ -81,7 +82,7 @@ func start(c *client.Client, args []string) {
 	//
 	err := c.StartJob(args)
 	if err != nil {
-		fmt.Printf("Error: %v \n", err)
+		printError(err)
 		return
 	}
 }
@@ -95,7 +96,7 @@ func stop(c *client.Client, args []string) {
 
 	err = c.StopJob(id)
 	if err != nil {
-		fmt.Printf("Error: %v \n", err)
+		printError(err)
 		return
 	}
 }
@@ -109,9 +110,15 @@ func log(c *client.Client, args []string) {
 
 	err = c.GetJobLog(id)
 	if err != nil {
-		fmt.Printf("Error: %v \n", err)
+		printError(err)
 		return
 	}
+}
+
+// printUsage prints usage instructions
+func printUsage() {
+	fmt.Println("[USAGE]")
+	fmt.Printf(" list\n start \t<linux cmd>\n status\t<job id>\n stop \t<job id>\n log \t<job id>\n\n")
 }
 
 // processID ensures only one arg was supplied for id
@@ -127,4 +134,9 @@ func processID(args []string) (string, error) {
 	}
 
 	return args[0], nil
+}
+
+// printError formats and prints errors to screen
+func printError(err error) {
+	fmt.Printf("\n[Error]\n%v \n\n", err)
 }
