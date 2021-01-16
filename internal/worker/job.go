@@ -16,81 +16,110 @@ const (
 	failed   = "FAILED"
 )
 
-// Job is one linux job
-type Job struct {
+// job is one linux job
+type job struct {
 	cmd    []string
 	status string
 	output string
 	pid    int
-	mu     sync.Mutex
+	sync.RWMutex
 }
 
-// New creates a new Job
-func newJob(cmd []string) *Job {
-	return &Job{
+// New creates a new job
+func newJob(cmd []string) *job {
+	return &job{
 		cmd:    cmd,
-		status: running,
-		mu:     sync.Mutex{},
+		status: queued,
 	}
 }
 
-// TODO:
-//	* handle invalid cmd(don't kill server. just set status to Failed)
-//	* Run in go routine ya?
-
-func (j *Job) start(id int) error {
+// start handles running of linux command processes in a go routine
+func (j *job) start(id string) error {
+	// set timeout in case process hangs
+	// ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	// defer cancel()
 
 	// init new Command
 	cmd := exec.Command(j.cmd[0], j.cmd[1:]...)
+	// cmd := exec.CommandContext(ctx, j.cmd[0], j.cmd[1:]...)
 	// set stdout and stderr to write to same buffer
-	// mimics CombinedOutput() from os/exec library
+	// mimics (*cmd) CombinedOutput() from os/exec library
 	var buf bytes.Buffer
 	cmd.Stdout = &buf
 	cmd.Stderr = &buf
 
-	// run command
-	if err := cmd.Start(); err != nil {
-		// mutex here probably.
+	// channel to catch error inside go routine
+	errCh := make(chan error)
+	// run process
+	go func() {
+		// run command
+		err := cmd.Start()
+		errCh <- err
+		if err != nil {
+			return
+		}
+
+		j.Lock()
+		// set job status
+		j.status = running
+		// store the Pid so stop() can be called later if needed.
+		j.pid = cmd.Process.Pid
+		j.Unlock()
+
+		// wait for process to end before accessing buffer below
+		cmd.Wait()
+
+		j.Lock()
+		// store result from process
+		j.output = string(buf.Bytes())
+
+		if cmd.ProcessState.Success() {
+			j.status = finished
+		} else {
+			j.status = failed
+		}
+
+		j.Unlock()
+
+	}()
+
+	// handle error from cmd.Start() in Go routine
+	err := <-errCh
+	if err != nil {
+		j.Lock()
+		j.output = fmt.Errorf("error starting command: %v", err).Error()
 		j.status = failed
-		j.output = err.Error()
-
-		return fmt.Errorf("error starting command: %w", err)
+		j.Unlock()
+		return err
 	}
-	// set job status
-	j.status = running
+	// if ctx.Err() == context.DeadlineExceeded {
+	// 	j.status = failed
+	// 	j.output = ctx.Err().Error()
+	// 	fmt.Print("ctx died")
+	// 	return ctx.Err()
+	// }
 
-	// mutex here
-	// store the Pid so stop() can be called later if needed.
-	j.pid = cmd.Process.Pid
-
-	// wait for process to end before access buffer below
-	cmd.Wait()
-
-	// mutex here
-	// store result from process
-	stdoutStderr := buf.Bytes()
-	j.output = string(stdoutStderr)
-	j.status = finished
-
-	fmt.Printf("PID: %d Finished Job # %d \n", j.pid, id)
-	fmt.Printf("Output: %s\n", j.output)
 	return nil
 }
 
-func (j *Job) stop() (bool, error) {
+// stop kills process if it is running when called.
+func (j *job) stop() (bool, error) {
+	j.Lock()
+	defer j.Unlock()
+
 	if j.status != running {
 		return false, nil
 	}
-
+	// lookup by pid and kill when found
 	proc, err := os.FindProcess(j.pid)
 	if err != nil {
 		return false, fmt.Errorf("could not find process. error: %v", err)
 	}
+
 	if err = proc.Kill(); err != nil {
 		return false, fmt.Errorf("could not kill process. error: %v", err)
 	}
 
 	j.status = canceled
-
 	return true, nil
 }
