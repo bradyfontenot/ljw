@@ -122,7 +122,7 @@ func (cl *Client) ListRunningJobs() error {
 	// TODO:
 	//	Printing output here for simplicity.
 	//	In mvp/prod we should return (response, err) for flexibility
-	//	and handle output in the frontend that is using client.
+	//	to format/handle output on frontend.
 	fmt.Println("[RUNNING JOBS]")
 	for _, v := range resp.JobIDList {
 		fmt.Println(" -ID:", v)
