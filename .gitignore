@@ -1,3 +1,6 @@
 private/
 old_ssl/
+
+#files
 cmd/client/shell.go
+main
