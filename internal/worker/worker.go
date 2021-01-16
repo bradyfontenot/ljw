@@ -45,29 +45,36 @@ func (wkr *Worker) ListRunningJobs() []string {
 }
 
 // StartJob initializes a new job and makes call to start the proc
-func (wkr *Worker) StartJob(cmd []string) (string, error) {
+func (wkr *Worker) StartJob(cmd []string) (map[string]string, error) {
 	// errChan := make(chan error)
 	wkr.Lock()
 	defer wkr.Unlock()
+
+	id := uuid.New().String()
+
+	// for debug
 	wkr.currID++
-	id := strconv.Itoa(wkr.currID)
-	id = uuid.New().String()
+	id = strconv.Itoa(wkr.currID)
+
 	// create new job instance
 	wkr.jobs[id] = newJob(cmd)
+	j := wkr.jobs[id]
 
 	// start job
 	err := wkr.jobs[id].start(id)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	// return map[string]string{
-	// 	"id":     id,
-	// 	"cmd":    "x", //strings.Join(wkr.jobs[id].cmd, " "),
-	// 	"status": wkr.jobs[id].status,
-	// 	"output": wkr.jobs[id].output,
-	// }
-	return id, nil
+	j.RLock()
+	defer j.RUnlock()
+	return map[string]string{
+		"id":     id,
+		"cmd":    strings.Join(wkr.jobs[id].cmd, " "),
+		"status": wkr.jobs[id].status,
+		"output": wkr.jobs[id].output,
+	}, nil
+	// return id, nil
 }
 
 // StopJob will cancel job if still running or queued
