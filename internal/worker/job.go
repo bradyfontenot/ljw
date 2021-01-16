@@ -34,6 +34,24 @@ func newJob(cmd []string) *job {
 	}
 }
 
+func (j *job) Status() string {
+	j.RLock()
+	defer j.RUnlock()
+	return j.status
+}
+
+func (j *job) Cmd() []string {
+	j.RLock()
+	defer j.RUnlock()
+	return j.cmd
+}
+
+func (j *job) Output() string {
+	j.RLock()
+	defer j.RUnlock()
+	return j.output
+}
+
 // start handles running of linux command processes in a go routine
 func (j *job) start(id string) error {
 	// set timeout in case process hangs
