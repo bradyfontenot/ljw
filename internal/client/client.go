@@ -120,9 +120,9 @@ func (cl *Client) ListRunningJobs() error {
 	}
 
 	// TODO: Format Output
-	fmt.Println("[RUNNING JOBS]")
+	fmt.Println("[ALL JOBS]")
 	for _, v := range resp.JobIDList {
-		fmt.Println("ID:", v)
+		fmt.Println(" -ID:", v)
 	}
 
 	return nil

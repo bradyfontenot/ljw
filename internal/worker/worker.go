@@ -46,7 +46,6 @@ func (wkr *Worker) ListRunningJobs() []string {
 
 // StartJob initializes a new job and makes call to start the proc
 func (wkr *Worker) StartJob(cmd []string) (map[string]string, error) {
-	// errChan := make(chan error)
 	wkr.Lock()
 	defer wkr.Unlock()
 
@@ -58,21 +57,21 @@ func (wkr *Worker) StartJob(cmd []string) (map[string]string, error) {
 
 	// create new job instance
 	wkr.jobs[id] = newJob(cmd)
-	j := wkr.jobs[id]
+	job := wkr.jobs[id]
 
 	// start job
-	err := wkr.jobs[id].start(id)
+	err := job.start(id)
 	if err != nil {
 		return nil, err
 	}
 
-	j.RLock()
-	defer j.RUnlock()
+	job.RLock()
+	defer job.RUnlock()
 	return map[string]string{
 		"id":     id,
-		"cmd":    strings.Join(wkr.jobs[id].cmd, " "),
-		"status": wkr.jobs[id].status,
-		"output": wkr.jobs[id].output,
+		"cmd":    strings.Join(job.cmd, " "),
+		"status": job.status,
+		"output": job.output,
 	}, nil
 	// return id, nil
 }
