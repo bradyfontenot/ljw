@@ -22,14 +22,13 @@ import (
 // I could pass a single type into the sendResp() helper that marshals the json and writes the request.
 // I wanted to avoid some repetitive boilerplate in the handlers.
 type Response struct {
-	Msg       string `json:"msg,omitempty"`       // message
-	Success   bool   `json:"success,omitempty"`   // successful operation
-	ID        int    `json:"id,omitempty"`        // job ID
-	Status    string `json:"status,omitempty"`    // job status
-	Cmd       string `json:"cmd,omitempty"`       // job command
-	Output    string `json:"output,omitempty"`    // job output
-	JobIDList []int  `json:"jobIDList,omitempty"` // list of job ID's
-	// JobList []worker.RunningJobs `json:"jobList,omitempty"` // list of job ID's
+	Msg       string   `json:"msg,omitempty"`       // message
+	Success   bool     `json:"success,omitempty"`   // successful operation
+	ID        string   `json:"id,omitempty"`        // job ID
+	Status    string   `json:"status,omitempty"`    // job status
+	Cmd       string   `json:"cmd,omitempty"`       // job command
+	Output    string   `json:"output,omitempty"`    // job output
+	JobIDList []string `json:"jobIDList,omitempty"` // list of job ID's
 }
 
 // router creates handler and defines the routes.
@@ -39,7 +38,7 @@ func (s *Server) router() *httprouter.Router {
 
 	r.GET("/api/jobs", s.listRunningJobs)
 	r.POST("/api/jobs", s.startJob)
-	r.GET("/api/jobs/:id", s.getJobStatus)
+	r.GET("/api/jobs/:id", s.getJob)
 	r.DELETE("/api/jobs/:id", s.stopJob)
 	r.GET("/api/jobs/:id/log", s.getJob)
 
@@ -77,7 +76,7 @@ func (s *Server) startJob(w http.ResponseWriter, r *http.Request, _ httprouter.P
 		return
 	}
 	// pass cmd to worker to build new job and receive id of new job
-	jobID, err := s.worker.StartJob(req.Cmd)
+	job, err := s.worker.StartJob(req.Cmd)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -87,7 +86,12 @@ func (s *Server) startJob(w http.ResponseWriter, r *http.Request, _ httprouter.P
 	w.WriteHeader(http.StatusCreated)
 
 	// build response msg & send
-	resp := Response{ID: jobID}
+	resp := Response{
+		ID:     job["id"],
+		Cmd:    job["cmd"],
+		Status: job["status"],
+		Output: job["output"],
+	}
 	sendResp(w, resp)
 }
 
@@ -153,6 +157,7 @@ func (s *Server) getJob(w http.ResponseWriter, r *http.Request, p httprouter.Par
 
 	// build response msg & send
 	resp := Response{
+		ID:     log["id"],
 		Cmd:    log["cmd"],
 		Status: log["status"],
 		Output: log["output"],
