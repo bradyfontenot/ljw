@@ -79,7 +79,6 @@ func start(c *client.Client, args []string) {
 		return
 	}
 
-	//
 	err := c.StartJob(args)
 	if err != nil {
 		printError(err)
