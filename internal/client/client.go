@@ -168,7 +168,8 @@ func (cl *Client) StartJob(cmd []string) error {
 	fmt.Printf("[JOB ADDED]\n -ID: %s\n -Status: %s\n", resp.ID, resp.Status)
 	// fmt.Printf("[STATUS] %s\n", resp.Status)
 	if resp.Status == "FINISHED" || resp.Status == "FAILED" {
-		fmt.Printf(" -Output: %s\n", resp.Output)
+		fmt.Printf(" -Output:\n%s", resp.Output)
+		fmt.Print("[END]\n\n")
 
 	}
 	// fmt.Printf("[JOB ADDED]\n -ID: %s\n -Command: %s\n -Status: %s\n -Output:\n%s\n", id, resp.Cmd, resp.Status, resp.Output)
@@ -269,5 +270,6 @@ func (cl *Client) GetJobLog(id string) error {
 
 	// TODO: Format Output
 	fmt.Printf("[JOB LOG]\n -ID: %s\n -Command: %s\n -Status: %s\n -Output:\n%s\n", id, resp.Cmd, resp.Status, resp.Output)
+	fmt.Print("[END]\n\n")
 	return nil
 }
