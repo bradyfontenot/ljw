@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"time"
 )
 
 const (
@@ -75,9 +76,10 @@ func (j *job) start(id string) error {
 
 		if cmd.ProcessState.Success() {
 			j.status = finished
-		} else {
-			j.status = failed
 		}
+		//  else {
+		// 	j.status = failed
+		// }
 
 		j.Unlock()
 
@@ -98,6 +100,10 @@ func (j *job) start(id string) error {
 	// 	fmt.Print("ctx died")
 	// 	return ctx.Err()
 	// }
+
+	// small delay to let go routin finish writing output for fast executing commands.
+	// allows output to be returned on initial response to starting a job
+	time.Sleep(300 * time.Millisecond)
 
 	return nil
 }
