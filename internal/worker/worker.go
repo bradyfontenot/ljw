@@ -36,9 +36,9 @@ func (wkr *Worker) ListRunningJobs() []string {
 	for id, job := range wkr.jobs {
 		job.RLock()
 		defer job.RUnlock()
-		// if running == job.status {
-		list = append(list, id)
-		// }
+		if running == job.status {
+			list = append(list, id)
+		}
 	}
 
 	return list
