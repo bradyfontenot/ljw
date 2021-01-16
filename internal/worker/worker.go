@@ -45,19 +45,20 @@ func (wkr *Worker) ListRunningJobs() []string {
 }
 
 // StartJob initializes a new job and makes call to start the proc
+// return props of new job
 func (wkr *Worker) StartJob(cmd []string) (map[string]string, error) {
 	wkr.Lock()
 	defer wkr.Unlock()
 
 	id := uuid.New().String()
 
-	// for debug
+	// for debug. replacing uuid for now
 	wkr.currID++
 	id = strconv.Itoa(wkr.currID)
 
 	// create new job instance
 	wkr.jobs[id] = newJob(cmd)
-	job := wkr.jobs[id]
+	job := wkr.jobs[id] // dont need this assignment but easier to read below.
 
 	// start job
 	err := job.start(id)
@@ -73,7 +74,6 @@ func (wkr *Worker) StartJob(cmd []string) (map[string]string, error) {
 		"status": job.status,
 		"output": job.output,
 	}, nil
-	// return id, nil
 }
 
 // StopJob will cancel job if still running or queued
@@ -95,25 +95,7 @@ func (wkr *Worker) StopJob(id string) (bool, error) {
 	return result, nil
 }
 
-// GetJobStatus retrieves status of job matching id arg
-func (wkr *Worker) GetJobStatus(id string) (map[string]string, error) {
-	wkr.RLock()
-	defer wkr.RUnlock()
-
-	// validate id
-	job, ok := wkr.jobs[id]
-	if !ok {
-		return nil, errors.New("invalid id")
-	}
-	job.RLock()
-	defer job.RUnlock()
-	return map[string]string{
-		"status": job.status,
-		"output": job.output,
-	}, nil
-}
-
-// GetJob returns a job struct matching id arg
+// GetJob returns a map of job props for the matching id
 func (wkr *Worker) GetJob(id string) (map[string]string, error) {
 	wkr.RLock()
 	defer wkr.RUnlock()
