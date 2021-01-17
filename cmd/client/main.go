@@ -10,6 +10,7 @@ import (
 
 func main() {
 
+	// check if args are supplied
 	if len(os.Args) <= 1 {
 		fmt.Println("\nNo arguments supplied. Must supply at least one argument\n")
 		printUsage()
