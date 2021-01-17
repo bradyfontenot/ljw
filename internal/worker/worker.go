@@ -9,12 +9,13 @@ import (
 	"github.com/google/uuid"
 )
 
+// for debug. temp.
 var idCounter int = 0
 
 // Worker is a store and task manager for all jobs
 type Worker struct {
 	jobs   map[string]*job // key serves as job id
-	currID int
+	currID int             // for debug. temp.
 	*sync.RWMutex
 }
 
@@ -52,7 +53,7 @@ func (wkr *Worker) StartJob(cmd []string) (map[string]string, error) {
 
 	id := uuid.New().String()
 
-	// for debug. replacing uuid for now
+	// for debug. temp. replacing uuid for now
 	wkr.currID++
 	id = strconv.Itoa(wkr.currID)
 
