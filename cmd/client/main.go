@@ -46,7 +46,7 @@ func main() {
 func list(c *client.Client, args []string) {
 	// validate args exist
 	if len(args) > 0 {
-		fmt.Println("\nToo many args. list take no arguments.\n")
+		fmt.Println("\nToo many args. list takes no arguments.\n")
 		printUsage()
 		return
 	}
