@@ -11,8 +11,11 @@ import (
 
 func main() {
 
-	srv, err := server.New(worker.New())
-	if err != nil {
+	// init httpserver
+	srv := server.New(worker.New())
+
+	// setup Authentication
+	if err := srv.SetupTLS(); err != nil {
 		fmt.Printf("Problem with authentication setup. Could not start server.\nError: %v\nShutting down...", err)
 		os.Exit(1)
 	}

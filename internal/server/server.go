@@ -56,30 +56,32 @@ func New(wkr *worker.Worker) *Server {
 	return &s
 }
 
-// setupTLS sets up Authentication and builds tlsConfig for the server.
-func setupTLS() (*tls.Config, error) {
+// SetupTLS handles certs and creates a TLSConfig
+func (s *Server) SetupTLS() error {
 
 	// load certificate authority file
 	caCert, err := ioutil.ReadFile(caFile)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// create pool for accepted certificate authorities and add ca.
 	caCertPool := x509.NewCertPool()
 	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-		return nil, errors.New("failed to append certs from pem")
+		return errors.New("failed to append certs from pem")
 	}
 
 	// load certificate and private key files
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &tls.Config{
+	s.TLSConfig = &tls.Config{
 		ClientAuth:   tls.RequireAndVerifyClientCert,
 		ClientCAs:    caCertPool,
 		Certificates: []tls.Certificate{cert},
-	}, nil
+	}
+
+	return nil
 }
