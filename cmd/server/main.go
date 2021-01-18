@@ -11,6 +11,8 @@ import (
 
 func main() {
 
+	// Removed the auth setup from server.New() to avoid having to error check New() on assignment.
+
 	// init httpserver
 	srv := server.New(worker.New())
 
