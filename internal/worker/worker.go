@@ -28,8 +28,8 @@ func New() *Worker {
 	}
 }
 
-// ListRunningJobs returns a list of running jobs
-func (wkr *Worker) ListRunningJobs() []string {
+// ListJobs returns a list of   jobs
+func (wkr *Worker) ListJobs() []string {
 	wkr.RLock()
 	defer wkr.RUnlock()
 
@@ -37,9 +37,7 @@ func (wkr *Worker) ListRunningJobs() []string {
 	for id, job := range wkr.jobs {
 		job.RLock()
 		defer job.RUnlock()
-		if running == job.status {
-			list = append(list, id)
-		}
+		list = append(list, id)
 	}
 
 	return list
@@ -47,7 +45,7 @@ func (wkr *Worker) ListRunningJobs() []string {
 
 // StartJob initializes a new job and makes call to start the proc
 // return props of new job
-func (wkr *Worker) StartJob(cmd []string) (map[string]string, error) {
+func (wkr *Worker) StartJob(cmd []string) map[string]string {
 	wkr.Lock()
 	defer wkr.Unlock()
 
@@ -62,10 +60,7 @@ func (wkr *Worker) StartJob(cmd []string) (map[string]string, error) {
 	job := wkr.jobs[id] // dont need this assignment but easier to read below.
 
 	// start job
-	err := job.start(id)
-	if err != nil {
-		return nil, err
-	}
+	job.start(id)
 
 	job.RLock()
 	defer job.RUnlock()
@@ -74,7 +69,7 @@ func (wkr *Worker) StartJob(cmd []string) (map[string]string, error) {
 		"cmd":    strings.Join(job.cmd, " "),
 		"status": job.status,
 		"output": job.output,
-	}, nil
+	}
 }
 
 // StopJob will cancel job if still running or queued
