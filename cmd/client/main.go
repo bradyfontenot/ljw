@@ -51,7 +51,7 @@ func list(c *client.Client, args []string) {
 		return
 	}
 
-	err := c.ListRunningJobs()
+	err := c.ListJobs()
 	if err != nil {
 		printError(err)
 		return
