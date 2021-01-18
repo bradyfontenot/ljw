@@ -21,9 +21,11 @@ func main() {
 	args := os.Args[2:]
 
 	// start client and attempt to connect to server
-	c, err := client.New()
-	if err != nil {
-		fmt.Printf("Problem Authenticating.\nError: %s\nShutting down...\n", err)
+	c := client.New()
+
+	// setup Authentication
+	if err := c.SetupTLS(); err != nil {
+		fmt.Printf("Problem with authentication setup. Could not start client.\nError: %v\nShutting down...", err)
 		return
 	}
 
