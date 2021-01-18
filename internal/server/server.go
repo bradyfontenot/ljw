@@ -16,8 +16,8 @@ package server
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 
@@ -38,13 +38,7 @@ type Server struct {
 }
 
 // New creates and returns a new server.
-func New(wkr *worker.Worker) *Server, error {
-
-	// load certs and config TLS for server
-	tlsConfig, err := setupTLS()
-	if err != nil {
-		return nil, err
-	}
+func New(wkr *worker.Worker) *Server {
 
 	var s Server
 	s = Server{
@@ -55,12 +49,11 @@ func New(wkr *worker.Worker) *Server, error {
 			// to set specific read timeout for each handler
 			ReadTimeout:  time.Duration(30 * time.Second),
 			WriteTimeout: time.Duration(30 * time.Second),
-			TLSConfig:    tlsConfig,
 		},
 		wkr,
 	}
 
-	return &s, nil
+	return &s
 }
 
 // setupTLS sets up Authentication and builds tlsConfig for the server.
