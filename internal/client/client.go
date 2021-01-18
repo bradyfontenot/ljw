@@ -95,8 +95,8 @@ func setupTLS() (*tls.Config, error) {
 	}, nil
 }
 
-// ListRunningJobs requests a list of all jobs and outputs id and status
-func (cl *Client) ListRunningJobs() error {
+// ListJobs requests a list of all jobs and outputs id and status
+func (cl *Client) ListJobs() error {
 	type response struct {
 		JobIDList []string `json:"jobIDList"`
 	}
@@ -122,8 +122,8 @@ func (cl *Client) ListRunningJobs() error {
 	// TODO:
 	//	Printing output here for simplicity.
 	//	In mvp/prod we should return (response, err) for flexibility
-	//	to format/handle output on frontend.
-	fmt.Println("[RUNNING JOBS]")
+	//	to format/handle data on frontend.
+	fmt.Println("[ ALL JOBS]")
 	for _, v := range resp.JobIDList {
 		fmt.Println(" -ID:", v)
 	}
