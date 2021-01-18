@@ -80,7 +80,7 @@ func setupTLS() (*tls.Config, error) {
 	// create pool for accepted certificate authorities and add ca.
 	caCertPool := x509.NewCertPool()
 	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-		return nil, err
+		return nil, errors.New("failed to append certs from pem")
 	}
 
 	// load certificate and private key files
@@ -111,7 +111,6 @@ func (cl *Client) ListJobs() error {
 	if err != nil {
 		return err
 	}
-
 	// extract response msg
 	var resp response
 	err = json.Unmarshal([]byte(body), &resp)

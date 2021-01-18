@@ -38,12 +38,12 @@ type Server struct {
 }
 
 // New creates and returns a new server.
-func New(wkr *worker.Worker) *Server {
+func New(wkr *worker.Worker) *Server, error {
 
 	// load certs and config TLS for server
 	tlsConfig, err := setupTLS()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	var s Server
@@ -60,7 +60,7 @@ func New(wkr *worker.Worker) *Server {
 		wkr,
 	}
 
-	return &s
+	return &s, nil
 }
 
 // setupTLS sets up Authentication and builds tlsConfig for the server.
@@ -69,17 +69,19 @@ func setupTLS() (*tls.Config, error) {
 	// load certificate authority file
 	caCert, err := ioutil.ReadFile(caFile)
 	if err != nil {
-		return &tls.Config{}, err
+		return nil, err
 	}
 
 	// create pool for accepted certificate authorities and add ca.
 	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM(caCert)
+	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
+		return nil, errors.New("failed to append certs from pem")
+	}
 
 	// load certificate and private key files
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		return &tls.Config{}, err
+		return nil, err
 	}
 
 	return &tls.Config{
