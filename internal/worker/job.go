@@ -38,7 +38,7 @@ func newJob(cmd []string) *job {
 }
 
 // start handles running of linux command processes in a go routine
-func (j *job) start(id string) error {
+func (j *job) start(id string) {
 
 	go func() {
 
@@ -81,10 +81,10 @@ func (j *job) start(id string) error {
 
 		// handle premature exit.
 		// tbh not sure most reliable way to check exit was due to kill signal.
-		// technically -1 can mean terminated by signal or that process hasn't exited
-		// but if Wait() is no longer blocking then should be finished or killed.
-		// also consider `err.Error() == "signal: killed"`` instead of exit code:
-		// not sure if there's a way to compare based on Signal type?
+		// godocs say -1 can mean terminated by signal or that process hasn't exited
+		// but if Wait() is no longer blocking then proc should be finished or killed.
+		// Also considered using `err.Error() == "signal: killed"`` instead of exit code:
+		// not sure if there's a way to grab the signal sent and compare based on Signal type?
 		if cmd.ProcessState.ExitCode() == -1 && ctx.Err() != context.DeadlineExceeded {
 			j.status = canceled
 			return
@@ -104,7 +104,6 @@ func (j *job) start(id string) error {
 	// allows output to be returned on initial response to starting a job
 	time.Sleep(50 * time.Millisecond)
 
-	return nil
 }
 
 // stop kills process if it is running when called.
