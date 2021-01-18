@@ -49,8 +49,8 @@ func (s *Server) router() *httprouter.Router {
 // listJobs retrieves list of ids for jobs currently in process
 func (s *Server) listRunningJobs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
-	// get list of running jobs
-	jobIDList := s.worker.ListRunningJobs()
+	// get list of   jobs
+	jobIDList := s.worker.ListJobs()
 
 	// set header properties
 	w.Header().Set("Content-Type", "application/json")
@@ -75,12 +75,9 @@ func (s *Server) startJob(w http.ResponseWriter, r *http.Request, _ httprouter.P
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// pass cmd to worker to build new job and receive id of new job
-	job, err := s.worker.StartJob(req.Cmd)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// pass cmd to worker to build new job and receive job props
+	job := s.worker.StartJob(req.Cmd)
+
 	// set header properties
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
