@@ -60,14 +60,6 @@ func TestStartJob(t *testing.T) {
 	})
 }
 
-// decode json response into map
-func decodeRes(res *httptest.ResponseRecorder) map[string]string {
-	var got map[string]string
-	json.NewDecoder(res.Body).Decode(&got)
-
-	return got
-}
-
 func TestStopJob(t *testing.T) {
 	// create server and populate job worker
 	srv := New(worker.New())
