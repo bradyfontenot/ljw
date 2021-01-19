@@ -50,7 +50,7 @@ func (s *Server) router() *httprouter.Router {
 func (s *Server) listRunningJobs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	// get list of   jobs
-	jobIDList := s.worker.ListJobs()
+	jobIDList := s.Worker.ListJobs()
 
 	// set header properties
 	w.Header().Set("Content-Type", "application/json")
@@ -76,7 +76,7 @@ func (s *Server) startJob(w http.ResponseWriter, r *http.Request, _ httprouter.P
 		return
 	}
 	// pass cmd to worker to build new job and receive job props
-	job := s.worker.StartJob(req.Cmd)
+	job := s.Worker.StartJob(req.Cmd)
 
 	// set header properties
 	w.Header().Set("Content-Type", "application/json")
@@ -95,7 +95,7 @@ func (s *Server) startJob(w http.ResponseWriter, r *http.Request, _ httprouter.P
 // stopJob stops job if it is currently running.
 // returns a boolean to confirm if job was canceled or not
 func (s *Server) stopJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	result, err := s.worker.StopJob(p.ByName("id"))
+	result, err := s.Worker.StopJob(p.ByName("id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -118,7 +118,7 @@ func (s *Server) stopJob(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 // getJob returns job matching id
 // called by client funcs: JobLog() & JobStatus()
 func (s *Server) getJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	log, err := s.worker.GetJob(p.ByName("id"))
+	log, err := s.Worker.GetJob(p.ByName("id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
