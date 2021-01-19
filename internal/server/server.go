@@ -34,7 +34,7 @@ const (
 // Server implements http server and uses a worker to execute tasks.
 type Server struct {
 	*http.Server
-	Worker *worker.Worker
+	worker *worker.Worker
 }
 
 // New creates and returns a new server.

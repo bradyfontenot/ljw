@@ -14,7 +14,7 @@ var idCounter int = 0
 
 // Worker is a store and task manager for all jobs
 type Worker struct {
-	jobs   map[string]*Job // key serves as job id
+	jobs   map[string]*job // key serves as job id
 	currID int             // for debug. temp.
 	*sync.RWMutex
 }
@@ -22,7 +22,7 @@ type Worker struct {
 // New creates a new Worker
 func New() *Worker {
 	return &Worker{
-		make(map[string]*Job),
+		make(map[string]*job),
 		0,
 		&sync.RWMutex{},
 	}
@@ -56,7 +56,7 @@ func (wkr *Worker) StartJob(cmd []string) map[string]string {
 	id = strconv.Itoa(wkr.currID)
 
 	// create new job instance
-	wkr.jobs[id] = NewJob(cmd)
+	wkr.jobs[id] = newJob(cmd)
 	job := wkr.jobs[id] // dont need this assignment but easier to read below.
 
 	// start job

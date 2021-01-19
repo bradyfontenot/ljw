@@ -20,8 +20,8 @@ const (
 	timeout  = "TIMEOUT"
 )
 
-// Job is one linux job
-type Job struct {
+// job is one linux job
+type job struct {
 	cmd    []string
 	status string
 	output string
@@ -29,16 +29,16 @@ type Job struct {
 	sync.RWMutex
 }
 
-// NewJob creates a new job
-func NewJob(cmd []string) *Job {
-	return &Job{
+// New creates a new job
+func newJob(cmd []string) *job {
+	return &job{
 		cmd:    cmd,
 		status: queued,
 	}
 }
 
 // start handles running of linux command processes in a go routine
-func (j *Job) start(id string) {
+func (j *job) start(id string) {
 
 	go func() {
 
@@ -107,7 +107,7 @@ func (j *Job) start(id string) {
 }
 
 // stop kills process if it is running when called.
-func (j *Job) stop() (bool, error) {
+func (j *job) stop() (bool, error) {
 	j.RLock()
 	defer j.RUnlock()
 
