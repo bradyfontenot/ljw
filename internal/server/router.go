@@ -118,7 +118,7 @@ func (s *Server) stopJob(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 // getJob returns job matching id
 // called by client funcs: JobLog() & JobStatus()
 func (s *Server) getJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	log, err := s.worker.GetJob(p.ByName("id"))
+	job, err := s.worker.GetJob(p.ByName("id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -130,10 +130,10 @@ func (s *Server) getJob(w http.ResponseWriter, r *http.Request, p httprouter.Par
 
 	// build response msg & send
 	resp := Response{
-		ID:     log["id"],
-		Cmd:    log["cmd"],
-		Status: log["status"],
-		Output: log["output"],
+		ID:     job["id"],
+		Cmd:    job["cmd"],
+		Status: job["status"],
+		Output: job["output"],
 	}
 	sendResp(w, resp)
 }
