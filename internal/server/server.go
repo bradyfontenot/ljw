@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	port     = "localhost:8080"
+	addr     = "localhost:8080"
 	certFile = "ssl/server.crt"
 	keyFile  = "ssl/server.key"
 	caFile   = "ssl/ca.crt"
@@ -43,7 +43,7 @@ func New(wkr *worker.Worker) *Server {
 	var s Server
 	s = Server{
 		&http.Server{
-			Addr:    port,
+			Addr:    addr,
 			Handler: s.router(),
 			// Generic timeout. Could use header timeout if you want
 			// to set specific read timeout for each handler
