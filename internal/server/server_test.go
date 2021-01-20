@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	// "github.com/bradyfontenot/ljw/internal/server"
 	"github.com/bradyfontenot/ljw/internal/worker"
 	"github.com/stretchr/testify/assert"
 )
@@ -61,17 +60,16 @@ func TestStartJob(t *testing.T) {
 }
 
 func TestStopJob(t *testing.T) {
-	// create server and populate job worker
-	srv := New(worker.New())
 
-	// create command and start job to be canceled
-	// id will be 1
+	// create server and populate worker with a job
+	srv := New(worker.New())
+	id := "1"
 	cmd := []string{"sleep", "30"}
 	srv.worker.StartJob(cmd)
 	time.Sleep(100 * time.Millisecond)
 
 	t.Run("successful stop request", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("/api/jobs/1"), nil)
+		req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("/api/jobs/%s", id), nil)
 		resp := httptest.NewRecorder()
 
 		srv.Handler.ServeHTTP(resp, req)
@@ -100,9 +98,8 @@ func TestStopJob(t *testing.T) {
 }
 
 func TestGetJob(t *testing.T) {
-	// create server and populate job worker
+	// create server and populate worker w/ a job
 	srv := New(worker.New())
-	// create command and start job.
 	id := "1"
 	cmd := []string{"echo", "Hello Teleport"}
 	srv.worker.StartJob(cmd)
@@ -112,9 +109,9 @@ func TestGetJob(t *testing.T) {
 		resp := httptest.NewRecorder()
 
 		srv.Handler.ServeHTTP(resp, req)
+		respResult := resp.Result()
 
 		// test response status code
-		respResult := resp.Result()
 		assert.Equal(t, http.StatusOK, respResult.StatusCode, "status code does not match")
 
 		// test json format
