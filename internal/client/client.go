@@ -91,7 +91,7 @@ func (cl *Client) SetupTLS() error {
 // ListJobs requests a list of all jobs and outputs id and status
 func (cl *Client) ListJobs() error {
 	type response struct {
-		IDList []string `json:"jobIDList"`
+		IDList []string `json:"idList"`
 	}
 
 	r, err := cl.Get(baseURI + "/api/jobs")
