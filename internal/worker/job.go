@@ -20,7 +20,6 @@ const (
 	timeout  = "TIMEOUT"
 )
 
-// job is one linux job
 type job struct {
 	cmd    []string
 	status string
@@ -29,7 +28,6 @@ type job struct {
 	sync.RWMutex
 }
 
-// New creates a new job
 func newJob(cmd []string) *job {
 	return &job{
 		cmd:    cmd,
@@ -37,22 +35,20 @@ func newJob(cmd []string) *job {
 	}
 }
 
-// start handles running of linux command processes in a go routine
-func (j *job) start(id string) {
+// start handles running of linux command processes
+func (j *job) start() {
 
 	go func() {
 
-		// timeout
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		// init command
 		cmd := exec.CommandContext(ctx, j.cmd[0], j.cmd[1:]...)
 		// Create a Process Group ID so call to kill also kills child process
 		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-		// set stdout and stderr to write to single buffer
+
 		var buf bytes.Buffer
 		cmd.Stdout = &buf
 		cmd.Stderr = &buf
-		// run command
+
 		err := cmd.Start()
 		if err != nil {
 			cancel()
@@ -69,13 +65,11 @@ func (j *job) start(id string) {
 		j.pid = cmd.Process.Pid
 		j.Unlock()
 
-		// Blocks until process finishes or is killed
 		err = cmd.Wait()
 		cancel()
 		j.Lock()
 		defer j.Unlock()
 
-		// record stdout/stderr
 		j.output = string(buf.Bytes())
 		fmt.Println(err) // debug temp
 
@@ -115,10 +109,27 @@ func (j *job) stop() (bool, error) {
 		return false, nil
 	}
 
-	// kill process group
 	if err := syscall.Kill(-j.pid, syscall.SIGKILL); err != nil {
 		return false, fmt.Errorf("could not kill process. error: %v", err)
 	}
 
 	return true, nil
+}
+
+func (j *job) Cmd() []string {
+	j.RLock()
+	defer j.RUnlock()
+	return j.cmd
+}
+
+func (j *job) Status() string {
+	j.RLock()
+	defer j.RUnlock()
+	return j.status
+}
+
+func (j *job) Output() string {
+	j.RLock()
+	defer j.RUnlock()
+	return j.output
 }

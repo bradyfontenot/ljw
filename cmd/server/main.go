@@ -11,13 +11,8 @@ import (
 
 func main() {
 
-	// Removed the auth setup from server.New() to avoid having to error check New() on assignment.
-
-	// init httpserver
-	srv := server.New(worker.New())
-
-	// setup Authentication
-	if err := srv.SetupTLS(); err != nil {
+	srv, err := server.New(worker.New())
+	if err != nil {
 		fmt.Printf("Problem with authentication setup. Could not start server.\nError: %v\nShutting down...", err)
 		os.Exit(1)
 	}

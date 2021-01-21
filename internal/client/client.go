@@ -47,54 +47,58 @@ type Client struct {
 }
 
 // New creates and returns a new Client
-func New() *Client {
+func New() (*Client, error) {
+
+	// load certs and config TLS for client
+	tlsConfig, err := setupTLS()
+	if err != nil {
+		return nil, err
+	}
+
+	tr := &http.Transport{
+		TLSClientConfig:     tlsConfig,
+		TLSHandshakeTimeout: time.Duration(15 * time.Second),
+	}
 
 	return &Client{
 		&http.Client{
-			Timeout: time.Duration(30 * time.Second),
+			Timeout:   time.Duration(30 * time.Second),
+			Transport: tr,
 		},
-	}
+	}, nil
 }
 
-// SetupTLS sets up Authentication and builds tlsConfig for the client
-func (cl *Client) SetupTLS() error {
+// setupTLS sets up Authentication and builds tlsConfig for the client
+func setupTLS() (*tls.Config, error) {
 
 	// load certificate authority file
 	caCert, err := ioutil.ReadFile(caFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// create pool for accepted certificate authorities and add ca.
 	caCertPool := x509.NewCertPool()
 	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-		return errors.New("failed to append certs from pem")
+		return nil, errors.New("failed to append certs from pem")
 	}
 
 	// load certificate and private key files
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	tls := tls.Config{
+	return &tls.Config{
 		RootCAs:      caCertPool,
 		Certificates: []tls.Certificate{cert},
-	}
-
-	tr := &http.Transport{
-		TLSClientConfig:     &tls,
-		TLSHandshakeTimeout: time.Duration(15 * time.Second),
-	}
-
-	cl.Transport = tr
-	return nil
+	}, nil
 }
 
 // ListJobs requests a list of all jobs and outputs id and status
 func (cl *Client) ListJobs() error {
 	type response struct {
-		JobIDList []string `json:"jobIDList"`
+		IDList []string `json:"idList"`
 	}
 
 	r, err := cl.Get(baseURI + "/api/jobs")
@@ -107,7 +111,6 @@ func (cl *Client) ListJobs() error {
 	if err != nil {
 		return err
 	}
-	// extract response msg
 	var resp response
 	err = json.Unmarshal([]byte(body), &resp)
 	if err != nil {
@@ -118,8 +121,8 @@ func (cl *Client) ListJobs() error {
 	//	Printing output here for simplicity.
 	//	In mvp/prod we should return (response, err) for flexibility
 	//	to format/handle data on frontend.
-	fmt.Println("[ ALL JOBS]")
-	for _, v := range resp.JobIDList {
+	fmt.Println("[ALL JOBS]")
+	for _, v := range resp.IDList {
 		fmt.Println(" -ID:", v)
 	}
 
@@ -145,7 +148,6 @@ func (cl *Client) StartJob(cmd []string) error {
 		return err
 	}
 
-	// send request & capture response
 	r, err := cl.Post(baseURI+"/api/jobs", "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
 		return err
@@ -157,19 +159,16 @@ func (cl *Client) StartJob(cmd []string) error {
 		return err
 	}
 
-	// check if request was successful
 	if r.StatusCode != http.StatusCreated {
 		return errors.New(string(body))
 	}
 
-	// extract response msg
 	var resp response
 	err = json.Unmarshal([]byte(body), &resp)
 	if err != nil {
 		return err
 	}
 
-	// TODO: See previous note about output
 	fmt.Printf("[JOB ADDED]\n -ID: %s\n -Status: %s\n", resp.ID, resp.Status)
 	if resp.Status == "FINISHED" || resp.Status == "FAILED" {
 		fmt.Printf(" -Output:\n%s", resp.Output)
@@ -184,7 +183,6 @@ func (cl *Client) JobStatus(id string) error {
 		Status string `json:"status"`
 	}
 
-	// send request & capture response
 	r, err := cl.Get(baseURI + "/api/jobs/" + id)
 	if err != nil {
 		return err
@@ -196,19 +194,16 @@ func (cl *Client) JobStatus(id string) error {
 		return err
 	}
 
-	// check if request was successful
 	if r.StatusCode != http.StatusOK {
 		return errors.New(string(body))
 	}
 
-	// extract response msg
 	var resp response
 	err = json.Unmarshal([]byte(body), &resp)
 	if err != nil {
 		return err
 	}
 
-	// TODO: See previous note about output
 	fmt.Printf("[JOB STATUS] => %s \n", resp.Status)
 
 	return nil
@@ -220,13 +215,11 @@ func (cl *Client) StopJob(id string) error {
 		Success bool `json:"success"`
 	}
 
-	// build DELETE request
 	req, err := http.NewRequest("DELETE", baseURI+"/api/jobs/"+id, nil)
 	if err != nil {
 		return err
 	}
 
-	// capture response
 	r, err := cl.Do(req)
 	if err != nil {
 		return err
@@ -238,19 +231,16 @@ func (cl *Client) StopJob(id string) error {
 		return err
 	}
 
-	// check if request was successful
 	if r.StatusCode != http.StatusOK {
 		return errors.New(string(body))
 	}
 
-	// extract response msg
 	var resp response
 	err = json.Unmarshal([]byte(body), &resp)
 	if err != nil {
 		return err
 	}
 
-	// TODO: See previous note about output
 	fmt.Printf("[JOB STOPPED] => %s \n", strings.ToUpper(strconv.FormatBool(resp.Success)))
 
 	return nil
@@ -264,7 +254,6 @@ func (cl *Client) GetJobLog(id string) error {
 		Output string `json:"output"`
 	}
 
-	// send request & capture response
 	r, err := cl.Get(baseURI + "/api/jobs/" + id + "/log")
 	if err != nil {
 		return err
@@ -276,19 +265,16 @@ func (cl *Client) GetJobLog(id string) error {
 		return err
 	}
 
-	// check if request was successful
 	if r.StatusCode != http.StatusOK {
 		return errors.New(string(body))
 	}
 
-	// extract response msg
 	var resp response
 	err = json.Unmarshal([]byte(body), &resp)
 	if err != nil {
 		return err
 	}
 
-	// TODO: See previous note about output
 	fmt.Printf("[JOB LOG]\n -ID: %s\n -Command: %s\n -Status: %s\n -Output:\n%s\n", id, resp.Cmd, resp.Status, resp.Output)
 	fmt.Print("[END]\n\n")
 

@@ -23,13 +23,13 @@ import (
 // I could pass a single type into the sendResp() helper that marshals the json and writes the request.
 // I wanted to avoid some repetitive boilerplate in the handlers.
 type Response struct {
-	Msg       string   `json:"msg,omitempty"`       // message
-	Success   bool     `json:"success,omitempty"`   // successful operation
-	ID        string   `json:"id,omitempty"`        // job ID
-	Status    string   `json:"status,omitempty"`    // job status
-	Cmd       string   `json:"cmd,omitempty"`       // job command
-	Output    string   `json:"output,omitempty"`    // job output
-	JobIDList []string `json:"jobIDList,omitempty"` // list of job ID's
+	Msg     string   `json:"msg,omitempty"`     // message
+	Success bool     `json:"success,omitempty"` // successful operation
+	ID      string   `json:"id,omitempty"`      // job ID
+	Status  string   `json:"status,omitempty"`  // job status
+	Cmd     string   `json:"cmd,omitempty"`     // job command
+	Output  string   `json:"output,omitempty"`  // job output
+	IDList  []string `json:"idList,omitempty"`  // list of job ID's
 }
 
 // router creates handler and defines the routes.
@@ -50,7 +50,7 @@ func (s *Server) router() *httprouter.Router {
 func (s *Server) listRunningJobs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	// get list of   jobs
-	jobIDList := s.worker.ListJobs()
+	idList := s.worker.ListJobs()
 
 	// set header properties
 	w.Header().Set("Content-Type", "application/json")
@@ -58,7 +58,7 @@ func (s *Server) listRunningJobs(w http.ResponseWriter, r *http.Request, _ httpr
 
 	// build response msg & send
 	resp := Response{
-		JobIDList: jobIDList,
+		IDList: idList,
 	}
 	sendResp(w, resp)
 }
@@ -118,7 +118,7 @@ func (s *Server) stopJob(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 // getJob returns job matching id
 // called by client funcs: JobLog() & JobStatus()
 func (s *Server) getJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	log, err := s.worker.GetJob(p.ByName("id"))
+	job, err := s.worker.GetJob(p.ByName("id"))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
@@ -130,10 +130,10 @@ func (s *Server) getJob(w http.ResponseWriter, r *http.Request, p httprouter.Par
 
 	// build response msg & send
 	resp := Response{
-		ID:     log["id"],
-		Cmd:    log["cmd"],
-		Status: log["status"],
-		Output: log["output"],
+		ID:     job["id"],
+		Cmd:    job["cmd"],
+		Status: job["status"],
+		Output: job["output"],
 	}
 	sendResp(w, resp)
 }
