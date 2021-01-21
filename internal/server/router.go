@@ -37,7 +37,7 @@ func (s *Server) router() *httprouter.Router {
 
 	r := httprouter.New()
 
-	r.GET("/api/jobs", s.listRunningJobs)
+	r.GET("/api/jobs", s.listJobs)
 	r.POST("/api/jobs", s.startJob)
 	r.GET("/api/jobs/:id", s.getJob)
 	r.DELETE("/api/jobs/:id", s.stopJob)
@@ -47,7 +47,7 @@ func (s *Server) router() *httprouter.Router {
 }
 
 // listJobs retrieves list of ids for jobs currently in process
-func (s *Server) listRunningJobs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (s *Server) listJobs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
 	// get list of   jobs
 	idList := s.worker.ListJobs()
