@@ -47,45 +47,52 @@ type Client struct {
 }
 
 // New creates and returns a new Client
-func New() *Client {
+func New() (*Client, error) {
 
-	return &Client{
-		&http.Client{
-			Timeout: time.Duration(30 * time.Second),
-		},
-	}
-}
-
-// SetupTLS sets up Authentication and builds tlsConfig for the client
-func (cl *Client) SetupTLS() error {
-
-	caCert, err := ioutil.ReadFile(caFile)
+	// load certs and config TLS for client
+	tlsConfig, err := setupTLS()
 	if err != nil {
-		return err
-	}
-
-	caCertPool := x509.NewCertPool()
-	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-		return errors.New("failed to append certs from pem")
-	}
-
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		return err
-	}
-
-	tls := tls.Config{
-		RootCAs:      caCertPool,
-		Certificates: []tls.Certificate{cert},
+		return nil, err
 	}
 
 	tr := &http.Transport{
-		TLSClientConfig:     &tls,
+		TLSClientConfig:     tlsConfig,
 		TLSHandshakeTimeout: time.Duration(15 * time.Second),
 	}
 
-	cl.Transport = tr
-	return nil
+	return &Client{
+		&http.Client{
+			Timeout:   time.Duration(30 * time.Second),
+			Transport: tr,
+		},
+	}, nil
+}
+
+// setupTLS sets up Authentication and builds tlsConfig for the client
+func setupTLS() (*tls.Config, error) {
+
+	// load certificate authority file
+	caCert, err := ioutil.ReadFile(caFile)
+	if err != nil {
+		return nil, err
+	}
+
+	// create pool for accepted certificate authorities and add ca.
+	caCertPool := x509.NewCertPool()
+	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
+		return nil, errors.New("failed to append certs from pem")
+	}
+
+	// load certificate and private key files
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tls.Config{
+		RootCAs:      caCertPool,
+		Certificates: []tls.Certificate{cert},
+	}, nil
 }
 
 // ListJobs requests a list of all jobs and outputs id and status

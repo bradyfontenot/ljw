@@ -10,23 +10,19 @@ import (
 
 func main() {
 
-	// check if args are supplied
 	if len(os.Args) <= 1 {
 		fmt.Println("\nNo arguments supplied. Must supply at least one argument\n")
 		printUsage()
 		return
 	}
-	// collect command line args
+
 	appCommand := os.Args[1]
 	args := os.Args[2:]
 
-	// start client and attempt to connect to server
-	c := client.New()
-
-	// setup Authentication
-	if err := c.SetupTLS(); err != nil {
+	c, err := client.New()
+	if err != nil {
 		fmt.Printf("Problem with authentication setup. Could not start client.\nError: %v\nShutting down...", err)
-		return
+		os.Exit(1)
 	}
 
 	switch appCommand {
@@ -46,7 +42,6 @@ func main() {
 }
 
 func list(c *client.Client, args []string) {
-	// validate args exist
 	if len(args) > 0 {
 		fmt.Println("\nToo many args. list takes no arguments.\n")
 		printUsage()
@@ -61,7 +56,6 @@ func list(c *client.Client, args []string) {
 }
 
 func status(c *client.Client, args []string) {
-	// validate only one arg supplied for id.
 	id, err := processID(args)
 	if err != nil {
 		return
@@ -75,7 +69,6 @@ func status(c *client.Client, args []string) {
 }
 
 func start(c *client.Client, args []string) {
-	// validate args exist
 	if len(args) < 1 {
 		fmt.Println("\nNo linux command supplied. Must supply a command\n")
 		printUsage()
@@ -90,7 +83,6 @@ func start(c *client.Client, args []string) {
 }
 
 func stop(c *client.Client, args []string) {
-	// validate only one arg supplied for id
 	id, err := processID(args)
 	if err != nil {
 		return
@@ -104,7 +96,6 @@ func stop(c *client.Client, args []string) {
 }
 
 func log(c *client.Client, args []string) {
-	// validate only one arg supplied for id.
 	id, err := processID(args)
 	if err != nil {
 		return
@@ -117,13 +108,11 @@ func log(c *client.Client, args []string) {
 	}
 }
 
-// printUsage prints usage instructions
 func printUsage() {
 	fmt.Println("[USAGE]")
 	fmt.Printf(" list\n start \t<linux cmd>\n status\t<job id>\n stop \t<job id>\n log \t<job id>\n\n")
 }
 
-// processID ensures only one arg was supplied for id
 func processID(args []string) (string, error) {
 	if len(args) < 1 {
 		fmt.Println("\nNo id supplied.\n")
@@ -138,7 +127,6 @@ func processID(args []string) (string, error) {
 	return args[0], nil
 }
 
-// printError formats and prints errors to screen
 func printError(err error) {
 	fmt.Printf("\n[Error]\n%v \n\n", err)
 }

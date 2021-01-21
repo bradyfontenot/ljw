@@ -38,7 +38,13 @@ type Server struct {
 }
 
 // New creates and returns a new server.
-func New(wkr *worker.Worker) *Server {
+func New(wkr *worker.Worker) (*Server, error) {
+
+	// load certs and config TLS for server
+	tlsConfig, err := setupTLS()
+	if err != nil {
+		return nil, err
+	}
 
 	var s Server
 	s = Server{
@@ -49,39 +55,38 @@ func New(wkr *worker.Worker) *Server {
 			// to set specific read timeout for each handler
 			ReadTimeout:  time.Duration(30 * time.Second),
 			WriteTimeout: time.Duration(30 * time.Second),
+			TLSConfig:    tlsConfig,
 		},
 		wkr,
 	}
 
-	return &s
+	return &s, nil
 }
 
-// SetupTLS handles certs and creates a TLSConfig
-func (s *Server) SetupTLS() error {
+// setupTLS sets up Authentication and builds tlsConfig for the server.
+func setupTLS() (*tls.Config, error) {
 
 	// load certificate authority file
 	caCert, err := ioutil.ReadFile(caFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// create pool for accepted certificate authorities and add ca.
 	caCertPool := x509.NewCertPool()
 	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-		return errors.New("failed to append certs from pem")
+		return nil, errors.New("failed to append certs from pem")
 	}
 
 	// load certificate and private key files
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	s.TLSConfig = &tls.Config{
+	return &tls.Config{
 		ClientAuth:   tls.RequireAndVerifyClientCert,
 		ClientCAs:    caCertPool,
 		Certificates: []tls.Certificate{cert},
-	}
-
-	return nil
+	}, nil
 }
