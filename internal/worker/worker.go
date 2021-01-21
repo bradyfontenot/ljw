@@ -14,8 +14,10 @@ var idCounter int = 0
 
 // Worker is a store and task manager for all jobs
 type Worker struct {
-	jobs   map[string]*job // key serves as job id
-	currID int             // for debug. temp.
+	// key serves as job id
+	jobs map[string]*job
+	// for debug. temp.
+	currID int
 	*sync.RWMutex
 }
 
@@ -28,15 +30,13 @@ func New() *Worker {
 	}
 }
 
-// ListJobs returns a list of   jobs
+// ListJobs returns a list of jobs
 func (wkr *Worker) ListJobs() []string {
 	wkr.RLock()
 	defer wkr.RUnlock()
 
 	var list []string
-	for id, job := range wkr.jobs {
-		job.RLock()
-		defer job.RUnlock()
+	for id := range wkr.jobs {
 		list = append(list, id)
 	}
 
@@ -55,20 +55,16 @@ func (wkr *Worker) StartJob(cmd []string) map[string]string {
 	wkr.currID++
 	id = strconv.Itoa(wkr.currID)
 
-	// create new job instance
 	wkr.jobs[id] = newJob(cmd)
-	job := wkr.jobs[id] // dont need this assignment but easier to read below.
+	job := wkr.jobs[id]
 
-	// start job
-	job.start(id)
+	job.start()
 
-	job.RLock()
-	defer job.RUnlock()
 	return map[string]string{
 		"id":     id,
-		"cmd":    strings.Join(job.cmd, " "),
-		"status": job.status,
-		"output": job.output,
+		"cmd":    strings.Join(job.Cmd(), " "),
+		"status": job.Status(),
+		"output": job.Output(),
 	}
 }
 
@@ -77,12 +73,11 @@ func (wkr *Worker) StopJob(id string) (bool, error) {
 	wkr.Lock()
 	defer wkr.Unlock()
 
-	// validate id
 	job, ok := wkr.jobs[id]
 	if !ok {
-		return false, errors.New("invalid id")
+		return false, errors.New(id + " is not a valid id")
 	}
-	// stop job
+
 	result, err := job.stop()
 	if err != nil {
 		return false, err
@@ -96,17 +91,15 @@ func (wkr *Worker) GetJob(id string) (map[string]string, error) {
 	wkr.RLock()
 	defer wkr.RUnlock()
 
-	// validate id
 	job, ok := wkr.jobs[id]
 	if !ok {
-		return nil, errors.New("invalid id")
+		return nil, errors.New(id + " is not a valid id")
 	}
-	job.RLock()
-	defer job.RUnlock()
+
 	return map[string]string{
 		"id":     id,
-		"cmd":    strings.Join(job.cmd, " "),
-		"status": job.status,
-		"output": job.output,
+		"cmd":    strings.Join(job.Cmd(), " "),
+		"status": job.Status(),
+		"output": job.Output(),
 	}, nil
 }
