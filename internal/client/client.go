@@ -114,7 +114,7 @@ func (cl *Client) ListJobs() error {
 	//	Printing output here for simplicity.
 	//	In mvp/prod we should return (response, err) for flexibility
 	//	to format/handle data on frontend.
-	fmt.Println("[ ALL JOBS]")
+	fmt.Println("[ALL JOBS]")
 	for _, v := range resp.IDList {
 		fmt.Println(" -ID:", v)
 	}
