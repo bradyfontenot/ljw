@@ -29,7 +29,7 @@ type Response struct {
 	Status  string   `json:"status,omitempty"`  // job status
 	Cmd     string   `json:"cmd,omitempty"`     // job command
 	Output  string   `json:"output,omitempty"`  // job output
-	IDList  []string `json:" idList,omitempty"` // list of job ID's
+	IDList  []string `json:"idList,omitempty"`  // list of job ID's
 }
 
 // router creates handler and defines the routes.
