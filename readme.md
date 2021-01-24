@@ -5,7 +5,6 @@ A worker service for scheduling and running linux processes concurrently from mu
 self signed certificates are stored in the project's ssl directory for sole purpose of running locally and as proof of concept.
 
 ## Installation
----
 1. Download the project
    - `git clone git@github.com:bradyfontenot/ljw.git`
    - `cd ljw`
@@ -19,18 +18,27 @@ self signed certificates are stored in the project's ssl directory for sole purp
 Do not relocate the ssl directory or the program will not be able to find the certificates.
 
 ## Run the Server
----
 1. You should still be in the project's root directory.
 2. **Start the server:**
    - `./bin/server`
 
 ## Run the Client
----
   1. Start a new terminal session in another window.
   2. cd into project's root directory if not already there.
 
 ### **Usage:**
 
+**Quick Start ** \
+(prefix all commands w/ `./bin/client` )
+- `start <linux command>`
+- `stop <job id>`
+- `list`
+- `status <job id>`
+- `log`
+
+<br>
+
+**START**
 ```bash
 # Start a job with a single command
 ./bin/client start ls # where ls is your linux command
@@ -41,15 +49,29 @@ Do not relocate the ssl directory or the program will not be able to find the ce
 
 # or the user must manually escape special characters"
 ./bin/client start ls '&&' tree '&&' sleep 3 '&&' echo done
-
+```
+**LIST**
+```bash
 # List jobs will retrieve a list of job ids for all jobs submitted thus far.
 ./bin/client list
+```
 
+**STATUS**
+```bash
 # Check Status of a specific job
 ./bin/client status <id>   # where <id> should be replaced with the job id
+```
 
+**STOP**
+```bash
 # Stop a job
 ./bin/client stop <id>  # where <id> should be replaced with the job id
+```
+
+**LOG**
+```bash
+# Get a job log
+./bin/client log <id> # where <id> should be replaced with the job id
 
 ```
 
