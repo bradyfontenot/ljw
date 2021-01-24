@@ -11,9 +11,9 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
-	"github.com/bradyfontenot/ljw/internal/worker"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -23,12 +23,13 @@ import (
 // I could pass a single type into the sendResp() helper that marshals the json and writes the request.
 // I wanted to avoid some repetitive boilerplate in the handlers.
 type Response struct {
-	Success bool                 `json:"success,omitempty"` // successful operation
-	ID      int                  `json:"id,omitempty"`      // job ID
-	Status  string               `json:"status,omitempty"`  // job status
-	Cmd     string               `json:"cmd,omitempty"`     // job command
-	Output  string               `json:"output,omitempty"`  // job output
-	JobList []worker.RunningJobs `json:"jobList,omitempty"` // list of job ID's
+	Msg     string   `json:"msg,omitempty"`     // message
+	Success bool     `json:"success,omitempty"` // successful operation
+	ID      string   `json:"id,omitempty"`      // job ID
+	Status  string   `json:"status,omitempty"`  // job status
+	Cmd     string   `json:"cmd,omitempty"`     // job command
+	Output  string   `json:"output,omitempty"`  // job output
+	IDList  []string `json:"idList,omitempty"`  // list of job ID's
 }
 
 // router creates handler and defines the routes.
@@ -36,24 +37,20 @@ func (s *Server) router() *httprouter.Router {
 
 	r := httprouter.New()
 
-	r.GET("/api/jobs", s.listRunningJobs)
+	r.GET("/api/jobs", s.listJobs)
 	r.POST("/api/jobs", s.startJob)
-	r.GET("/api/jobs/:id", s.getJobStatus)
+	r.GET("/api/jobs/:id", s.getJob)
 	r.DELETE("/api/jobs/:id", s.stopJob)
-	r.GET("/api/jobs/:id/log", s.getJobLog)
+	r.GET("/api/jobs/:id/log", s.getJob)
 
 	return r
 }
 
 // listJobs retrieves list of ids for jobs currently in process
-func (s *Server) listRunningJobs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func (s *Server) listJobs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
-	// get list of running jobs
-	jobList, err := s.worker.ListRunningJobs()
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	// get list of   jobs
+	idList := s.worker.ListJobs()
 
 	// set header properties
 	w.Header().Set("Content-Type", "application/json")
@@ -61,7 +58,7 @@ func (s *Server) listRunningJobs(w http.ResponseWriter, r *http.Request, _ httpr
 
 	// build response msg & send
 	resp := Response{
-		JobList: jobList,
+		IDList: idList,
 	}
 	sendResp(w, resp)
 }
@@ -69,9 +66,8 @@ func (s *Server) listRunningJobs(w http.ResponseWriter, r *http.Request, _ httpr
 // startJob starts a new job and returns new job id if successful
 func (s *Server) startJob(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	type request struct {
-		Cmd string
+		Cmd []string
 	}
-
 	// decode request msg
 	var req request
 	err := json.NewDecoder(r.Body).Decode(&req)
@@ -79,42 +75,19 @@ func (s *Server) startJob(w http.ResponseWriter, r *http.Request, _ httprouter.P
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	// pass cmd to worker to build new job and receive job props
+	job := s.worker.StartJob(req.Cmd)
 
-	// pass cmd to worker to build new job and receive id of new job
-	jobID, err := s.worker.StartJob(req.Cmd)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
 	// set header properties
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
 	// build response msg & send
-	resp := Response{ID: jobID}
-	sendResp(w, resp)
-}
-
-// getJobStatus returns status of job matching id. Output will
-// also be included in response in case job is already complete
-// and client would like to see that output alongside status.
-func (s *Server) getJobStatus(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-
-	status, err := s.worker.GetJobStatus(p.ByName("id"))
-	if err != nil {
-		// could also have case to return a 404 when id does not exist
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// set header properties
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-
-	// build response msg & send
 	resp := Response{
-		Status: status["status"],
-		Output: status["output"],
+		ID:     job["id"],
+		Cmd:    job["cmd"],
+		Status: job["status"],
+		Output: job["output"],
 	}
 	sendResp(w, resp)
 }
@@ -122,11 +95,9 @@ func (s *Server) getJobStatus(w http.ResponseWriter, r *http.Request, p httprout
 // stopJob stops job if it is currently running.
 // returns a boolean to confirm if job was canceled or not
 func (s *Server) stopJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-
 	result, err := s.worker.StopJob(p.ByName("id"))
 	if err != nil {
-		// could also have case to return a 404 when id does not exist
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
@@ -144,12 +115,12 @@ func (s *Server) stopJob(w http.ResponseWriter, r *http.Request, p httprouter.Pa
 	sendResp(w, resp)
 }
 
-// getJobLog returns log for job matching id
-func (s *Server) getJobLog(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	log, err := s.worker.GetJobLog(p.ByName("id"))
+// getJob returns job matching id
+// called by client funcs: JobLog() & JobStatus()
+func (s *Server) getJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	job, err := s.worker.GetJob(p.ByName("id"))
 	if err != nil {
-		// could also have case to return a 404 when id does not exist
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusNotFound)
 		return
 	}
 
@@ -159,9 +130,10 @@ func (s *Server) getJobLog(w http.ResponseWriter, r *http.Request, p httprouter.
 
 	// build response msg & send
 	resp := Response{
-		Cmd:    log["cmd"],
-		Status: log["status"],
-		Output: log["output"],
+		ID:     job["id"],
+		Cmd:    job["cmd"],
+		Status: job["status"],
+		Output: job["output"],
 	}
 	sendResp(w, resp)
 }
@@ -170,7 +142,8 @@ func (s *Server) getJobLog(w http.ResponseWriter, r *http.Request, p httprouter.
 func sendResp(w http.ResponseWriter, msg Response) {
 	resp, err := json.Marshal(msg)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		e := fmt.Errorf("could not marshall json. error: %w", err)
+		http.Error(w, e.Error(), http.StatusInternalServerError)
 		return
 	}
 	w.Write(resp)

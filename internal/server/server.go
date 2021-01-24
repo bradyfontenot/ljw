@@ -16,8 +16,8 @@ package server
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 
@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	port     = ":8080"
+	addr     = "localhost:8080"
 	certFile = "ssl/server.crt"
 	keyFile  = "ssl/server.key"
 	caFile   = "ssl/ca.crt"
@@ -38,7 +38,7 @@ type Server struct {
 }
 
 // New creates and returns a new server.
-func New(wkr *worker.Worker) *Server, error {
+func New(wkr *worker.Worker) (*Server, error) {
 
 	// load certs and config TLS for server
 	tlsConfig, err := setupTLS()
@@ -49,7 +49,7 @@ func New(wkr *worker.Worker) *Server, error {
 	var s Server
 	s = Server{
 		&http.Server{
-			Addr:    port,
+			Addr:    addr,
 			Handler: s.router(),
 			// Generic timeout. Could use header timeout if you want
 			// to set specific read timeout for each handler
