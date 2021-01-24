@@ -28,13 +28,13 @@ Do not relocate the ssl directory or the program will not be able to find the ce
 
 ### **Usage:**
 
-**Quick Start ** \
-(prefix all commands w/ `./bin/client` )
+**Quick Start** \
+prefix all commands with: `./bin/client` 
 - `start <linux command>`
 - `stop <job id>`
 - `list`
 - `status <job id>`
-- `log`
+- `log <job id>`
 
 <br>
 
@@ -75,3 +75,14 @@ Do not relocate the ssl directory or the program will not be able to find the ce
 
 ```
 
+## Tests
+
+There is currently one test file named `server_test.go` located in `internal/server` directory.
+
+### Run the tests
+- **From the project root directory:**
+  - `go test ./internal/server`
+
+OR
+- **From the server package directory `internal/server`:**
+  - `go test`
