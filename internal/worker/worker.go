@@ -59,12 +59,11 @@ func (wkr *Worker) StartJob(cmd []string) map[string]string {
 	job := wkr.jobs[id]
 
 	job.start()
-
 	return map[string]string{
 		"id":     id,
 		"cmd":    strings.Join(job.Cmd(), " "),
 		"status": job.Status(),
-		"output": job.Output(),
+		"output": strings.Join(job.Output(), " "),
 	}
 }
 
@@ -100,6 +99,6 @@ func (wkr *Worker) GetJob(id string) (map[string]string, error) {
 		"id":     id,
 		"cmd":    strings.Join(job.Cmd(), " "),
 		"status": job.Status(),
-		"output": job.Output(),
+		"output": strings.Join(job.Output(), " "),
 	}, nil
 }
