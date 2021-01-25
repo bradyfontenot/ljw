@@ -77,7 +77,6 @@ func (j *job) start() {
 	j.pid = cmd.Process.Pid
 	j.Unlock()
 
-	d := make(chan bool)
 	go func() {
 		<-done
 		err = cmd.Wait()
@@ -99,17 +98,8 @@ func (j *job) start() {
 		} else {
 			j.status = failed
 		}
-		d <- true
 	}()
-
-	// Removed time.sleep().
-	// jobs finishing immediately will pass through w/ out hinderance.
-	// and allow for immediate ouput of results after `start` cmd.
-	// w/ out need to request log.
-	select {
-	case <-d:
-	case <-time.After(10 * time.Millisecond):
-	}
+	time.Sleep(10 * time.Millisecond)
 }
 
 // stop kills process if it is running when called and returns true.
