@@ -9,14 +9,15 @@ import (
 	"github.com/google/uuid"
 )
 
-// for debug. temp.
+// left in place for your testing convenience.
+// use UUID for job id in production
 var idCounter int = 0
 
 // Worker is a store and task manager for all jobs
 type Worker struct {
 	// key serves as job id
 	jobs map[string]*job
-	// for debug. temp.
+	// should be replaced by UUID in production
 	currID int
 	*sync.RWMutex
 }
@@ -51,7 +52,10 @@ func (wkr *Worker) StartJob(cmd []string) map[string]string {
 
 	id := uuid.New().String()
 
-	// for debug. temp. replacing uuid for now
+	// left in place for prototype and your convenience.
+	// it will be easier for you all to test.
+	// much nicer typing 'status 2' vs 'status 2jdhddhw-23hsdfljv-ereqlejf`
+	// when calling by id.  But UUID is ideal for uniqueness in prod.
 	wkr.currID++
 	id = strconv.Itoa(wkr.currID)
 
