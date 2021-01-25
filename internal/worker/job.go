@@ -43,21 +43,25 @@ func (j *job) start() {
 	cmdReader, err := cmd.StdoutPipe()
 	cmd.Stderr = cmd.Stdout
 
-	// scans stdout and writes output to log
+	// Now scans stdout and writes output to log
 	// as it comes through the pipe
-	// done will block cmd.Wait() until pipe is empty
-	done := make(chan int)
+	// done will block cmd.Wait() until pipe is EOF
+	// sc ensures scanner will be reading when cmd.Start() is called.
+	done := make(chan bool)
+	sc := make(chan bool)
 	scanner := bufio.NewScanner(cmdReader)
 	go func() {
+		sc <- true
 		for scanner.Scan() {
 			line := scanner.Text()
 			j.Lock()
 			j.output = append(j.output, line+"\n")
 			j.Unlock()
 		}
-		done <- 1
+		done <- true
 	}()
 
+	<-sc
 	err = cmd.Start()
 	if err != nil {
 		j.Lock()
@@ -72,6 +76,8 @@ func (j *job) start() {
 	// store the Pid so stop() can be called later if needed.
 	j.pid = cmd.Process.Pid
 	j.Unlock()
+
+	d := make(chan bool)
 	go func() {
 		<-done
 		err = cmd.Wait()
@@ -93,8 +99,17 @@ func (j *job) start() {
 		} else {
 			j.status = failed
 		}
+		d <- true
 	}()
-	time.Sleep(15 * time.Millisecond)
+
+	// Removed time.sleep().
+	// jobs finishing immediately will pass through w/ out hinderance.
+	// and allow for immediate ouput of results after `start` cmd.
+	// w/ out need to request log.
+	select {
+	case <-d:
+	case <-time.After(10 * time.Millisecond):
+	}
 }
 
 // stop kills process if it is running when called and returns true.
