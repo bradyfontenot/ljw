@@ -4,15 +4,23 @@ A worker service for scheduling and running linux processes concurrently from mu
 
 self signed certificates are stored in the project's ssl directory for sole purpose of running locally and as proof of concept.
 
+## Required
+- Install Go 1.14.6 or greater: [Download Go](https://golang.org/dl/)
 ## Project Setup
-1. Download the project
-   - `git clone git@github.com:bradyfontenot/ljw.git`
-   - `cd ljw`
-2. Build the packages
-   - `go build -o /bin/server cmd/server/main.go`
-   - `go build -o /bin/client cmd/client/main.go`
+1. **Download the project**
+    ```
+   git clone git@github.com:bradyfontenot/ljw.git
+   cd ljw
+   go get -u ./...
+   ```
 
-- You should now have 2 binaries in your /bin directory named `server` and `client`
+2. **Build the packages**
+   ```
+   go build -o /bin/server cmd/server/main.go
+   go build -o /bin/client cmd/client/main.go
+   ```
+
+   You should now have 2 binaries in your /bin directory named `server` and `client`
 
 **Important Note:** \
 Do not relocate the ssl directory or the application will not be able to find the certificates.
@@ -40,38 +48,32 @@ prefix all commands with: `./bin/client`
 
 **START**
 ```bash
-# Start a job with a single command
+# Start a job with a command
 ./bin/client start ls # where ls is your linux command
-
-# Start a job with multiple commands:
-# Jobs with multiple commands must be in quotes 
-./bin/client start "ls && tree && sleep 3 && echo done"
-
-# or the user must manually escape special characters"
-./bin/client start ls '&&' tree '&&' sleep 3 '&&' echo done
 ```
+
 **LIST**
 ```bash
-# List jobs will retrieve a list of job ids for all jobs submitted thus far.
+# List jobs will retrieve a list of job ids for all jobs 
 ./bin/client list
 ```
 
 **STATUS**
 ```bash
 # Check Status of a specific job
-./bin/client status <id>   # where <id> should be replaced with the job id
+./bin/client status <id>  
 ```
 
 **STOP**
 ```bash
 # Stop a job
-./bin/client stop <id>  # where <id> should be replaced with the job id
+./bin/client stop <id> 
 ```
 
 **LOG**
 ```bash
 # Get a job log
-./bin/client log <id> # where <id> should be replaced with the job id
+./bin/client log <id> 
 
 ```
 
