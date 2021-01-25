@@ -11,7 +11,6 @@ self signed certificates are stored in the project's ssl directory for sole purp
     ```
    git clone git@github.com:bradyfontenot/ljw.git
    cd ljw
-   go get -u ./...
    ```
 
 2. **Build the packages**
@@ -19,8 +18,8 @@ self signed certificates are stored in the project's ssl directory for sole purp
    go build -o /bin/server cmd/server/main.go
    go build -o /bin/client cmd/client/main.go
    ```
-
-   You should now have 2 binaries in your /bin directory named `server` and `client`
+  
+  You should now have 2 binaries in your /bin directory named `server` and `client`
 
 **Important Note:** \
 Do not relocate the ssl directory or the application will not be able to find the certificates.
