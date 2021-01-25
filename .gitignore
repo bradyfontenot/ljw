@@ -1,6 +1,6 @@
 private/
 old_ssl/
-
+bin/
 #files
 cmd/client/shell.go
 main
