@@ -15,10 +15,10 @@ self signed certificates are stored in the project's ssl directory for sole purp
 
 2. **Build the packages**
    ```
-   go build -o /bin/server cmd/server/main.go
-   go build -o /bin/client cmd/client/main.go
+   go build -o bin/server cmd/server/main.go
+   go build -o bin/client cmd/client/main.go
    ```
-  
+ 
   You should now have 2 binaries in your /bin directory named `server` and `client`
 
 **Important Note:** \
