@@ -35,7 +35,7 @@ import (
 )
 
 const (
-	baseURI  = "https://localhost:8080/"
+	baseURI  = "https://localhost:8080"
 	certFile = "ssl/client.crt"
 	keyFile  = "ssl/client.key"
 	caFile   = "ssl/ca.crt"
@@ -111,6 +111,11 @@ func (cl *Client) ListJobs() error {
 	if err != nil {
 		return err
 	}
+
+	if r.StatusCode != http.StatusOK {
+		return errors.New(string(body))
+	}
+
 	var resp response
 	err = json.Unmarshal([]byte(body), &resp)
 	if err != nil {
@@ -119,8 +124,9 @@ func (cl *Client) ListJobs() error {
 
 	// TODO:
 	//	Printing output here for simplicity.
-	//	In mvp/prod we should return (response, err) for flexibility
-	//	to format/handle data on frontend.
+	//	In mvp/prod we should return (response, err)
+	//	for flexibility	to format/handle data on frontend.
+	//  This applies to all methods below that are printing output to screen
 	fmt.Println("[ALL JOBS]")
 	for _, v := range resp.IDList {
 		fmt.Println(" -ID:", v)
@@ -169,9 +175,14 @@ func (cl *Client) StartJob(cmd []string) error {
 		return err
 	}
 
-	fmt.Printf("[JOB ADDED]\n -ID: %s\n -Status: %s\n -Command: %s\n", resp.ID, resp.Status, resp.Cmd)
-	fmt.Printf(" -Output:\n %s", resp.Output)
-	fmt.Print("[END]\n\n")
+	fmt.Printf("[JOB ADDED]\n[ID]: \t\t%s\n[COMMAND]: \t%s\n[STATUS]: \t%s\n[OUTPUT]:\n%s\n", resp.ID, resp.Cmd, resp.Status, resp.Output)
+	fmt.Print("[OUTPUT END]\n\n")
+
+	// fmt.Printf("[JOB ADDED]\n -ID: %s\n -Status: %s\n", resp.ID, resp.Status)
+	// if resp.Status == "FINISHED" || resp.Status == "FAILED" {
+	// 	fmt.Printf(" -Output:\n%s", resp.Output)
+	// 	fmt.Print("[END]\n\n")
+	// }
 	return nil
 }
 
@@ -273,7 +284,8 @@ func (cl *Client) GetJobLog(id string) error {
 		return err
 	}
 
-	fmt.Printf("[JOB LOG]\n -ID: %s\n -Command: %s\n -Status: %s\n -Output:\n %s\n", id, resp.Cmd, resp.Status, resp.Output)
-	fmt.Print("\n[END OF OUTPUT]\n\n")
+	fmt.Printf("[JOB LOG]\n[ID]: \t\t%s\n[COMMAND]: \t%s\n[STATUS]: \t%s\n[OUTPUT]:\n%s\n", id, resp.Cmd, resp.Status, resp.Output)
+	fmt.Print("[OUTPUT END]\n\n")
+
 	return nil
 }
