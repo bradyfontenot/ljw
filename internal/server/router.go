@@ -23,7 +23,6 @@ import (
 // I could pass a single type into the sendResp() helper that marshals the json and writes the request.
 // I wanted to avoid some repetitive boilerplate in the handlers.
 type Response struct {
-	Msg     string   `json:"msg,omitempty"`     // message
 	Success bool     `json:"success,omitempty"` // successful operation
 	ID      string   `json:"id,omitempty"`      // job ID
 	Status  string   `json:"status,omitempty"`  // job status
@@ -49,7 +48,7 @@ func (s *Server) router() *httprouter.Router {
 // listJobs retrieves list of ids for jobs currently in process
 func (s *Server) listJobs(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
-	// get list of   jobs
+	// get list of jobs
 	idList := s.worker.ListJobs()
 
 	// set header properties
