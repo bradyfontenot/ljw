@@ -1,3 +1,7 @@
+// TODO:
+//	some of this code is repetitive and should be put into
+//	helper functions.
+
 package server
 
 import (
@@ -12,7 +16,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -36,7 +39,6 @@ func TestStartJob(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// create command
 	cmd := map[string][]string{"Cmd": []string{"echo", "Hello", "World"}}
 	reqBody, err := json.Marshal(cmd)
 	if err != nil {
@@ -91,7 +93,7 @@ func TestStopJob(t *testing.T) {
 	srv.worker.StartJob(cmd)
 
 	t.Run("successful stop request", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("/api/jobs/%s", id), nil)
+		req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/jobs/%s", id), nil)
 		resp := httptest.NewRecorder()
 
 		srv.Handler.ServeHTTP(resp, req)
@@ -120,7 +122,7 @@ func TestStopJob(t *testing.T) {
 
 	t.Run("stop request with nonexistent id", func(t *testing.T) {
 		id = "5"
-		req, _ := http.NewRequest(http.MethodDelete, fmt.Sprintf("/api/jobs/%s", id), nil)
+		req := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/jobs/%s", id), nil)
 		resp := httptest.NewRecorder()
 
 		srv.Handler.ServeHTTP(resp, req)
@@ -148,8 +150,8 @@ func TestGetJob(t *testing.T) {
 	cmd := []string{"echo", "Hello Teleport"}
 	srv.worker.StartJob(cmd)
 
-	t.Run("successful job request", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/jobs/%s", id), nil)
+	t.Run("successful job request using valid id", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/jobs/%s", id), nil)
 		resp := httptest.NewRecorder()
 
 		srv.Handler.ServeHTTP(resp, req)
@@ -185,7 +187,7 @@ func TestGetJob(t *testing.T) {
 
 	t.Run("invalid job request using noexistent id", func(t *testing.T) {
 		id := "2"
-		req, _ := http.NewRequest(http.MethodGet, fmt.Sprintf("/api/jobs/%s", id), nil)
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/jobs/%s", id), nil)
 		resp := httptest.NewRecorder()
 
 		srv.Handler.ServeHTTP(resp, req)
@@ -205,29 +207,25 @@ func TestGetJob(t *testing.T) {
 
 func TestClientAuthentication(t *testing.T) {
 
-	t.Run("test valid client", func(t *testing.T) {
+	t.Run("test valid client connection is accepted", func(t *testing.T) {
 
-		srv, err := New(worker.New())
-		if err != nil {
-			log.Fatal(err)
-		}
 		cl, err := client.New()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		// Creating TLS test server and importing our TLS settings
-		//
+		// creat a new server and assign it's
+		// configuration to the httptest's TLS
+		// server for testing.
+		srv, err := New(worker.New())
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		s := httptest.NewUnstartedServer(srv.Handler)
 		s.TLS = srv.TLSConfig
-
 		s.StartTLS()
 
-		// Here we grab the port # from s.URL and joing with localhost
-		// StartTLS default URL does not match what our
-		// server and client are configured for
-		serverPort := ":" + strings.Split(s.URL, ":")[2]
-		s.URL = "https://localhost" + serverPort
 		res, err := cl.Get(s.URL + "/api/jobs")
 		if err != nil {
 			log.Fatal(err)
@@ -239,11 +237,8 @@ func TestClientAuthentication(t *testing.T) {
 		s.Close()
 	})
 
-	t.Run("test invalid client", func(t *testing.T) {
-		srv, err := New(worker.New())
-		if err != nil {
-			log.Fatal(err)
-		}
+	t.Run("test invalid client connection is rejected", func(t *testing.T) {
+		// init client and reconfigure with invalid certificates.
 		cl, err := client.New()
 		if err != nil {
 			log.Fatal(err)
@@ -258,13 +253,17 @@ func TestClientAuthentication(t *testing.T) {
 		}
 		cl.Transport = tr
 
+		// configure  and run server
+		// assign handler and tlsconfig from app's server to TLS test server
+		srv, err := New(worker.New())
+		if err != nil {
+			log.Fatal(err)
+		}
 		s := httptest.NewUnstartedServer(srv.Handler)
 		s.TLS = srv.TLSConfig
 		s.StartTLS()
-		serverPort := ":" + strings.Split(s.URL, ":")[2]
-		s.URL = "https://localhost" + serverPort
 
-		// build client request
+		// build client request and check for failure
 		_, err = cl.Get(s.URL + "/api/jobs")
 		assert.Contains(t, err.Error(), "x509: certificate signed by unknown authority")
 
@@ -272,7 +271,8 @@ func TestClientAuthentication(t *testing.T) {
 
 }
 
-//
+// builds a tls config with invalid certifcates that is assigned
+// to previously created client
 func invalidClientTLS() (*tls.Config, error) {
 	certFile := "ssl/invalid_test_ssl/invalid_client.crt"
 	keyFile := "ssl/invalid_test_ssl/invalid_client.key"
