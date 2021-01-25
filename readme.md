@@ -4,7 +4,7 @@ A worker service for scheduling and running linux processes concurrently from mu
 
 self signed certificates are stored in the project's ssl directory for sole purpose of running locally and as proof of concept.
 
-## Installation
+## Project Setup
 1. Download the project
    - `git clone git@github.com:bradyfontenot/ljw.git`
    - `cd ljw`
@@ -15,7 +15,7 @@ self signed certificates are stored in the project's ssl directory for sole purp
 - You should now have 2 binaries in your /bin directory named `server` and `client`
 
 **Important Note:** \
-Do not relocate the ssl directory or the program will not be able to find the certificates.
+Do not relocate the ssl directory or the application will not be able to find the certificates.
 
 ## Run the Server
 1. You should still be in the project's root directory.
