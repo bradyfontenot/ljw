@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os/exec"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -36,13 +35,17 @@ func newJob(cmd []string) *job {
 
 // start handles running of linux command processes
 func (j *job) start() {
-	cmdString := strings.Join(j.cmd[:], " ")
-	cmd := exec.Command("sh", "-c", cmdString)
+
+	cmd := exec.Command(j.cmd[0], j.cmd[1:]...)
 	// Create a Process Group ID so call to terminate also kills child process
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+
 	cmdReader, err := cmd.StdoutPipe()
 	cmd.Stderr = cmd.Stdout
 
+	// scans stdout and writes output to log
+	// as it comes through the pipe
+	// done will block cmd.Wait() until pipe is empty
 	done := make(chan int)
 	scanner := bufio.NewScanner(cmdReader)
 	go func() {
@@ -72,22 +75,19 @@ func (j *job) start() {
 	go func() {
 		<-done
 		err = cmd.Wait()
+
 		j.Lock()
 		defer j.Unlock()
+
 		if err != nil {
 			j.output = append(j.output, "Error: "+err.Error())
 		}
 
-		// handle premature exit.
-		// tbh not sure most reliable way to check exit was due to kill signal.
-		// godocs say -1 can mean terminated by signal or that process hasn't exited
-		// but if Wait() is no longer blocking then proc should be finished or killed.
-		// Also considered using `err.Error() == "signal: killed"`` instead of exit code:
-		// not sure if there's a way to grab the signal sent and compare based on Signal type?
 		if cmd.ProcessState.ExitCode() == -1 {
 			j.status = canceled
 			return
 		}
+
 		if cmd.ProcessState.Success() {
 			j.status = finished
 		} else {
@@ -97,7 +97,8 @@ func (j *job) start() {
 	time.Sleep(15 * time.Millisecond)
 }
 
-// stop kills process if it is running when called.
+// stop kills process if it is running when called and returns true.
+// otherwise simply returns false.
 func (j *job) stop() (bool, error) {
 	j.RLock()
 	defer j.RUnlock()
