@@ -100,6 +100,9 @@ func (j *job) start() {
 		}
 	}()
 	time.Sleep(10 * time.Millisecond)
+	// Leaving here for now. Realize this is not the best way
+	// and data should be synced better between routines
+	// but couldn't fully sort solution so reverted back
 }
 
 // stop kills process if it is running when called and returns true.
