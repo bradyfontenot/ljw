@@ -1,12 +1,3 @@
-/*
-/	router.go defines all the routes and handlers
-/	I broke this out to keep server.go from getting cluttered.
-/
-/	For a larger project you'd probably want to break this out
-/	into its own package w/ separate files(or even separate packages)
-/	for each major endpoint and it's handlers depending on scale of project
-*/
-
 package server
 
 import (
@@ -18,10 +9,6 @@ import (
 )
 
 // Response is a catch all response struct
-//
-// I decided to use this instead of defining a struct for each response separately so that
-// I could pass a single type into the sendResp() helper that marshals the json and writes the request.
-// I wanted to avoid some repetitive boilerplate in the handlers.
 type Response struct {
 	Success bool     `json:"success,omitempty"`
 	ID      string   `json:"id,omitempty"`

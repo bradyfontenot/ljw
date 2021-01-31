@@ -1,16 +1,3 @@
-/*
-/	Server.go contains constructor and auth function.
-/	Auth could be in separate package if warranted by
-/	complexity.
-/
-/	Routes, which are part of server package are located
-/	in separate file along w/ the handlers(router.go)
-/
-/	cert/key/ca files stored in repo w/ paths hardcoded
-/	but should be accessed using environment variables
-/	or other method to keep hidden/secure.
-*/
-
 package server
 
 import (

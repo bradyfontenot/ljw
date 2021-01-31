@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"sync"
 	"syscall"
-	"time"
 )
 
 // status values
@@ -43,10 +42,6 @@ func (j *job) start() {
 	cmdReader, err := cmd.StdoutPipe()
 	cmd.Stderr = cmd.Stdout
 
-	// Now scans stdout and writes output to log
-	// as it comes through the pipe
-	// done will block cmd.Wait() until pipe is EOF
-	// sc ensures scanner will be reading when cmd.Start() is called.
 	done := make(chan bool)
 	sc := make(chan bool)
 	scanner := bufio.NewScanner(cmdReader)
@@ -99,10 +94,7 @@ func (j *job) start() {
 			j.status = failed
 		}
 	}()
-	time.Sleep(10 * time.Millisecond)
-	// Leaving here for now. Realize this is not the best way
-	// and data should be synced better between routines
-	// but couldn't fully sort solution so reverted back
+
 }
 
 // stop kills process if it is running when called and returns true.

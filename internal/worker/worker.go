@@ -9,8 +9,7 @@ import (
 	"github.com/google/uuid"
 )
 
-// left in place for your testing convenience.
-// use UUID for job id in production
+// temp
 var idCounter int = 0
 
 // Worker is a store and task manager for all jobs
@@ -52,10 +51,7 @@ func (wkr *Worker) StartJob(cmd []string) map[string]string {
 
 	id := uuid.New().String()
 
-	// left in place for prototype and your convenience.
-	// it will be easier for you all to test.
-	// much nicer typing 'status 2' vs 'status 2jdhddhw-23hsdfljv-ereqlejf`
-	// when calling by id.  But UUID is ideal for uniqueness in prod.
+	// temp. replace w/ UUID in prod
 	wkr.currID++
 	id = strconv.Itoa(wkr.currID)
 

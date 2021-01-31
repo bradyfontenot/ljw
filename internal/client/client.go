@@ -1,23 +1,3 @@
-/*
-/	Currently contains client constructor, auth function and
-/	request functions.  Similar to server, auth could be
-/	broken out into separate package if warranted by complexity.
-/
-/	Again, could also break out the requests if desired for a larger project
-/	with more than one endpoint and have a package for each.
-/	I've not done an api client in Go before but, in the past w/ elixir
-/	I've had a module for the client w/ generic methods for each request type
-/	and then separate modules for each endpoint w/ relevant methods.
-/
-/	So you could do something like set a baseURL w/ some middleware and then
-/ 	just pass an endpoint to the client's generic request method instead of
-/	passing the baseURL and hardcoding the endpoint everytime like below.
-/
-/	cert/key/ca files stored in repo w/ paths hardcoded
-/	but should be accessed using environment variables
-/	or other method to keep hidden/secure.
-*/
-
 package client
 
 import (
@@ -122,11 +102,6 @@ func (cl *Client) ListJobs() error {
 		return err
 	}
 
-	// TODO:
-	//	Printing output here for simplicity.
-	//	In mvp/prod we should return (response, err)
-	//	for flexibility	to format/handle data on frontend.
-	//  This applies to all methods below that are printing output to screen
 	fmt.Println("[ALL JOBS]")
 	for _, v := range resp.IDList {
 		fmt.Println(" -ID:", v)
@@ -178,11 +153,6 @@ func (cl *Client) StartJob(cmd []string) error {
 	fmt.Printf("[JOB ADDED]\n[ID]: \t\t%s\n[COMMAND]: \t%s\n[STATUS]: \t%s\n[OUTPUT]:\n%s\n", resp.ID, resp.Cmd, resp.Status, resp.Output)
 	fmt.Print("[OUTPUT END]\n\n")
 
-	// fmt.Printf("[JOB ADDED]\n -ID: %s\n -Status: %s\n", resp.ID, resp.Status)
-	// if resp.Status == "FINISHED" || resp.Status == "FAILED" {
-	// 	fmt.Printf(" -Output:\n%s", resp.Output)
-	// 	fmt.Print("[END]\n\n")
-	// }
 	return nil
 }
 
