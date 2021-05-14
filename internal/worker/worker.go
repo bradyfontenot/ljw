@@ -2,6 +2,7 @@ package worker
 
 import (
 	"errors"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -39,7 +40,12 @@ func (wkr *Worker) ListJobs() []string {
 	for id := range wkr.jobs {
 		list = append(list, id)
 	}
+	sort.Slice(list, func(i, j int) bool {
+		li, _ := strconv.Atoi(list[i])
+		lj, _ := strconv.Atoi(list[j])
 
+		return li < lj
+	})
 	return list
 }
 
