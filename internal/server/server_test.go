@@ -267,6 +267,9 @@ func TestClientAuthentication(t *testing.T) {
 
 		// build client request and check for failure
 		_, err = cl.Get(s.URL + "/api/jobs")
+		if err != nil {
+			// pass through to prevent compile error exit code in test result
+		}
 		assert.Contains(t, err.Error(), "x509: certificate signed by unknown authority")
 
 	})
