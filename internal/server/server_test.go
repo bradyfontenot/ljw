@@ -57,7 +57,7 @@ func TestStartJob(t *testing.T) {
 
 		// test json format
 		actualJSON, _ := ioutil.ReadAll(respResult.Body)
-		expectedJSON := `{"id":"1","cmd":"echo Hello World", "status":"FINISHED", "output":"Hello World\n"}`
+		expectedJSON := `{"id":"1","cmd":"echo Hello World", "status":"RUNNING"}`
 		assert.JSONEq(t, expectedJSON, string(actualJSON), "json does not match")
 
 		// test data structure
@@ -73,8 +73,8 @@ func TestStartJob(t *testing.T) {
 		expected := response{
 			ID:     "1",
 			Cmd:    "echo Hello World",
-			Status: "FINISHED",
-			Output: "Hello World\n",
+			Status: "RUNNING",
+			Output: "",
 		}
 
 		assert.Equal(t, expected, actual)
@@ -149,6 +149,8 @@ func TestGetJob(t *testing.T) {
 	id := "1"
 	cmd := []string{"echo", "Hello Teleport"}
 	srv.worker.StartJob(cmd)
+	// give command a little time to finish before checking log for output
+	time.Sleep(25 * time.Millisecond)
 
 	t.Run("successful job request using valid id", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/jobs/%s", id), nil)
