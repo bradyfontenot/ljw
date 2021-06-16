@@ -247,7 +247,7 @@ func TestClientAuthentication(t *testing.T) {
 		}
 		tls, err := invalidClientTLS()
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("TLS: %v", err)
 		}
 		tr := &http.Transport{
 			TLSClientConfig:     tls,
