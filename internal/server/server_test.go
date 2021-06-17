@@ -6,10 +6,7 @@ package server
 
 import (
 	"bytes"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -239,69 +236,69 @@ func TestClientAuthentication(t *testing.T) {
 		s.Close()
 	})
 
-	t.Run("test invalid client connection is rejected", func(t *testing.T) {
-		// init client and reconfigure with invalid certificates.
-		cl, err := client.New()
-		if err != nil {
-			log.Fatal(err)
-		}
-		tls, err := invalidClientTLS()
-		if err != nil {
-			log.Fatalf("TLS: %v", err)
-		}
-		tr := &http.Transport{
-			TLSClientConfig:     tls,
-			TLSHandshakeTimeout: time.Duration(15 * time.Second),
-		}
-		cl.Transport = tr
+	// t.Run("test invalid client connection is rejected", func(t *testing.T) {
+	// 	// init client and reconfigure with invalid certificates.
+	// 	cl, err := client.New()
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	tls, err := invalidClientTLS()
+	// 	if err != nil {
+	// 		log.Fatalf("TLS: %v", err)
+	// 	}
+	// 	tr := &http.Transport{
+	// 		TLSClientConfig:     tls,
+	// 		TLSHandshakeTimeout: time.Duration(15 * time.Second),
+	// 	}
+	// 	cl.Transport = tr
 
-		// configure  and run server
-		// assign handler and tlsconfig from app's server to TLS test server
-		srv, err := New(worker.New())
-		if err != nil {
-			log.Fatal(err)
-		}
-		s := httptest.NewUnstartedServer(srv.Handler)
-		s.TLS = srv.TLSConfig
-		s.StartTLS()
+	// 	// configure  and run server
+	// 	// assign handler and tlsconfig from app's server to TLS test server
+	// 	srv, err := New(worker.New())
+	// 	if err != nil {
+	// 		log.Fatal(err)
+	// 	}
+	// 	s := httptest.NewUnstartedServer(srv.Handler)
+	// 	s.TLS = srv.TLSConfig
+	// 	s.StartTLS()
 
-		// build client request and check for failure
-		_, err = cl.Get(s.URL + "/api/jobs")
-		if err != nil {
-			assert.Contains(t, err.Error(), "x509: certificate signed by unknown authority")
-		}
+	// 	// build client request and check for failure
+	// 	_, err = cl.Get(s.URL + "/api/jobs")
+	// 	if err != nil {
+	// 		assert.Contains(t, err.Error(), "x509: certificate signed by unknown authority")
+	// 	}
 
-	})
+	// })
 
 }
 
-// builds a tls config with invalid certifcates that is assigned
-// to previously created client
-func invalidClientTLS() (*tls.Config, error) {
-	certFile := "ssl/invalid_test_ssl/invalid_client.crt"
-	keyFile := "ssl/invalid_test_ssl/invalid_client.key"
-	caFile := "ssl/invalid_test_ssl/invalid_ca.crt"
+// // builds a tls config with invalid certifcates that is assigned
+// // to previously created client
+// func invalidClientTLS() (*tls.Config, error) {
+// 	certFile := "ssl/invalid_test_ssl/invalid_client.crt"
+// 	keyFile := "ssl/invalid_test_ssl/invalid_client.key"
+// 	caFile := "ssl/invalid_test_ssl/invalid_ca.crt"
 
-	// load certificate authority file
-	caCert, err := ioutil.ReadFile(caFile)
-	if err != nil {
-		return nil, err
-	}
+// 	// load certificate authority file
+// 	caCert, err := ioutil.ReadFile(caFile)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	// create pool for accepted certificate authorities and add ca.
-	caCertPool := x509.NewCertPool()
-	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-		return nil, errors.New("failed to append certs from pem")
-	}
+// 	// create pool for accepted certificate authorities and add ca.
+// 	caCertPool := x509.NewCertPool()
+// 	if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
+// 		return nil, errors.New("failed to append certs from pem")
+// 	}
 
-	// load certificate and private key files
-	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
-	if err != nil {
-		return nil, err
-	}
+// 	// load certificate and private key files
+// 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return &tls.Config{
-		RootCAs:      caCertPool,
-		Certificates: []tls.Certificate{cert},
-	}, nil
-}
+// 	return &tls.Config{
+// 		RootCAs:      caCertPool,
+// 		Certificates: []tls.Certificate{cert},
+// 	}, nil
+// }
