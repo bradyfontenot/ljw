@@ -1,5 +1,8 @@
 # **Linux Job Worker**
 
+First pass at Go. not that pretty but, had to start somewhere :).
+
+
 A worker service for scheduling and running linux processes concurrently from multiple clients. The server provides a REST API secured with mutual TLS for authentication. It offers the ability to start, stop and query the status and logs for all jobs using a simple client cli.
 
 self signed certificates are stored in the project's ssl directory for sole purpose of running locally and as proof of concept.
